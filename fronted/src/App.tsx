@@ -19,6 +19,21 @@ const API_URL = 'http://localhost:3000';
 const hoy = new Date();
 const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
 
+const CATEGORIAS = [
+  { valor: 'Comida y bebida', icono: '🍔' },
+  { valor: 'Supermercado', icono: '🛒' },
+  { valor: 'Transporte', icono: '🚌' },
+  { valor: 'Salud', icono: '💊' },
+  { valor: 'Entretenimiento', icono: '🎬' },
+  { valor: 'Compras', icono: '🛍️' },
+  { valor: 'Servicios', icono: '💡' },
+  { valor: 'Educación', icono: '📚' },
+  { valor: 'Hogar', icono: '🏠' },
+  { valor: 'Vestimenta', icono: '👕' },
+  { valor: 'Mascotas', icono: '🐶' },
+  { valor: 'Otros', icono: '📦' },
+];
+
 const nombreMes = (mes: string) => {
   const [year, month] = mes.split('-').map(Number);
   const fecha = new Date(year, month - 1, 1);
@@ -37,9 +52,10 @@ function App() {
   const [mesSeleccionado, setMesSeleccionado] = useState(mesActual);
   const [descripcion, setDescripcion] = useState('');
   const [monto, setMonto] = useState('');
-  const [categoria, setCategoria] = useState('');
+  const [categoria, setCategoria] = useState(CATEGORIAS[0].valor);
   const [fecha, setFecha] = useState(() => new Date().toISOString().split('T')[0]);
   const [editandoId, setEditandoId] = useState<number | null>(null);
+  
 
   const cargarGastos = async (mes: string) => {
     const res = await fetch(`${API_URL}/gastos?mes=${mes}`);
@@ -147,12 +163,13 @@ useEffect(() => {
           onChange={(e) => setMonto(e.target.value)}
           required
         />
-        <input
-          placeholder="Categoría"
-          value={categoria}
-          onChange={(e) => setCategoria(e.target.value)}
-          required
-        />
+        <select value={categoria} onChange={(e) => setCategoria(e.target.value)} required>
+          {CATEGORIAS.map((c) => (
+            <option key={c.valor} value={c.valor}>
+              {c.icono} {c.valor}
+            </option>
+          ))}
+        </select>
         <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
         <button type="submit">{editandoId !== null ? 'Guardar cambios' : 'Agregar'}</button>
         {editandoId !== null && (
@@ -174,7 +191,7 @@ useEffect(() => {
             }}
           >
             <span>
-              {g.descripcion} — ${g.monto} ({g.categoria})
+              {CATEGORIAS.find((c) => c.valor === g.categoria)?.icono ?? '📦'} {g.descripcion} — ${g.monto} ({g.categoria})
             </span>
             <span>
               <button onClick={() => handleEditar(g)}>Editar</button>{' '}
