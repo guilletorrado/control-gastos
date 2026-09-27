@@ -1,12 +1,21 @@
 import { useEffect, useState } from 'react';
 import './App.css';
 
+interface ItemGasto {
+  id?: number;
+  producto: string;
+  cantidad: number;
+  precioUnitario: number;
+}
+
 interface Gasto {
   id: number;
   descripcion: string;
   monto: number;
   categoria: string;
   fecha: string;
+  lugar?: string | null;
+  items?: ItemGasto[];
 }
 
 interface Resumen {
@@ -15,9 +24,6 @@ interface Resumen {
 }
 
 const API_URL = 'http://localhost:3000';
-
-const hoy = new Date();
-const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
 
 const CATEGORIAS = [
   { valor: 'Comida y bebida', icono: '🍔' },
@@ -33,6 +39,9 @@ const CATEGORIAS = [
   { valor: 'Mascotas', icono: '🐶' },
   { valor: 'Otros', icono: '📦' },
 ];
+
+const hoy = new Date();
+const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
 
 const nombreMes = (mes: string) => {
   const [year, month] = mes.split('-').map(Number);
@@ -50,12 +59,21 @@ function App() {
   const [gastos, setGastos] = useState<Gasto[]>([]);
   const [resumen, setResumen] = useState<Resumen | null>(null);
   const [mesSeleccionado, setMesSeleccionado] = useState(mesActual);
+
+  // Campos comunes
   const [descripcion, setDescripcion] = useState('');
   const [monto, setMonto] = useState('');
   const [categoria, setCategoria] = useState(CATEGORIAS[0].valor);
   const [fecha, setFecha] = useState(() => new Date().toISOString().split('T')[0]);
   const [editandoId, setEditandoId] = useState<number | null>(null);
-  
+
+  // Compra grande
+  const [esCompraGrande, setEsCompraGrande] = useState(false);
+  const [lugar, setLugar] = useState('');
+  const [items, setItems] = useState<ItemGasto[]>([]);
+  const [productoTemp, setProductoTemp] = useState('');
+  const [cantidadTemp, setCantidadTemp] = useState('');
+  const [precioTemp, setPrecioTemp] = useState('');
 
   const cargarGastos = async (mes: string) => {
     const res = await fetch(`${API_URL}/gastos?mes=${mes}`);
@@ -69,25 +87,68 @@ function App() {
     setResumen(data);
   };
 
-useEffect(() => {
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  void cargarGastos(mesSeleccionado);
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  void cargarResumen(mesSeleccionado);
-}, [mesSeleccionado]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void cargarGastos(mesSeleccionado);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void cargarResumen(mesSeleccionado);
+  }, [mesSeleccionado]);
 
   const limpiarFormulario = () => {
     setDescripcion('');
     setMonto('');
-    setCategoria('');
+    setCategoria(CATEGORIAS[0].valor);
     setFecha(new Date().toISOString().split('T')[0]);
     setEditandoId(null);
+    setEsCompraGrande(false);
+    setLugar('');
+    setItems([]);
+    setProductoTemp('');
+    setCantidadTemp('');
+    setPrecioTemp('');
   };
+
+  const agregarItem = () => {
+    if (!productoTemp || !cantidadTemp || !precioTemp) return;
+    setItems([
+      ...items,
+      {
+        producto: productoTemp,
+        cantidad: Number(cantidadTemp),
+        precioUnitario: Number(precioTemp),
+      },
+    ]);
+    setProductoTemp('');
+    setCantidadTemp('');
+    setPrecioTemp('');
+  };
+
+  const quitarItem = (index: number) => {
+    setItems(items.filter((_, i) => i !== index));
+  };
+
+  const totalItems = items.reduce((acc, i) => acc + i.cantidad * i.precioUnitario, 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (editandoId !== null) {
+    if (esCompraGrande) {
+      if (items.length === 0) {
+        alert('Agregá al menos un producto');
+        return;
+      }
+      await fetch(`${API_URL}/gastos/compra-grande`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          descripcion: descripcion || `Compra en ${lugar}`,
+          categoria,
+          fecha,
+          lugar,
+          items,
+        }),
+      });
+    } else if (editandoId !== null) {
       await fetch(`${API_URL}/gastos/${editandoId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -119,6 +180,7 @@ useEffect(() => {
     setMonto(String(gasto.monto));
     setCategoria(gasto.categoria);
     setFecha(gasto.fecha.split('T')[0]);
+    setEsCompraGrande(false); // por ahora, edición simple no soporta editar items
   };
 
   return (
@@ -150,33 +212,130 @@ useEffect(() => {
       )}
 
       <form onSubmit={handleSubmit} style={{ marginBottom: 20 }}>
-        <input
-          placeholder="Descripción"
-          value={descripcion}
-          onChange={(e) => setDescripcion(e.target.value)}
-          required
-        />
-        <input
-          placeholder="Monto"
-          type="number"
-          value={monto}
-          onChange={(e) => setMonto(e.target.value)}
-          required
-        />
-        <select value={categoria} onChange={(e) => setCategoria(e.target.value)} required>
-          {CATEGORIAS.map((c) => (
-            <option key={c.valor} value={c.valor}>
-              {c.icono} {c.valor}
-            </option>
-          ))}
-        </select>
-        <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
-        <button type="submit">{editandoId !== null ? 'Guardar cambios' : 'Agregar'}</button>
-        {editandoId !== null && (
-          <button type="button" onClick={limpiarFormulario}>
-            Cancelar
-          </button>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <input
+            type="checkbox"
+            checked={esCompraGrande}
+            onChange={(e) => setEsCompraGrande(e.target.checked)}
+            disabled={editandoId !== null}
+          />
+          Es una compra grande
+        </label>
+
+        {esCompraGrande ? (
+          <>
+            <input
+              placeholder="Descripción (opcional)"
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+            />
+            <input
+              placeholder="Lugar (ej: Coto, Almacén del barrio)"
+              value={lugar}
+              onChange={(e) => setLugar(e.target.value)}
+              required
+            />
+            <select value={categoria} onChange={(e) => setCategoria(e.target.value)} required>
+              {CATEGORIAS.map((c) => (
+                <option key={c.valor} value={c.valor}>
+                  {c.icono} {c.valor}
+                </option>
+              ))}
+            </select>
+            <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
+
+            <div style={{ border: '1px dashed #999', borderRadius: 8, padding: 12, margin: '12px 0' }}>
+              <strong>Agregar productos</strong>
+              <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                <input
+                  placeholder="Producto"
+                  value={productoTemp}
+                  onChange={(e) => setProductoTemp(e.target.value)}
+                />
+                <input
+                  placeholder="Cantidad"
+                  type="number"
+                  value={cantidadTemp}
+                  onChange={(e) => setCantidadTemp(e.target.value)}
+                  style={{ width: 90 }}
+                />
+                <input
+                  placeholder="Precio unitario"
+                  type="number"
+                  value={precioTemp}
+                  onChange={(e) => setPrecioTemp(e.target.value)}
+                  style={{ width: 120 }}
+                />
+                <button type="button" onClick={agregarItem}>
+                  + Agregar producto
+                </button>
+              </div>
+
+              {items.length > 0 && (
+                <ul style={{ listStyle: 'none', padding: 0, marginTop: 12 }}>
+                  {items.map((item, i) => (
+                    <li
+                      key={i}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        borderBottom: '1px solid #ddd',
+                        padding: '4px 0',
+                      }}
+                    >
+                      <span>
+                        {item.producto} — {item.cantidad} x ${item.precioUnitario} = $
+                        {item.cantidad * item.precioUnitario}
+                      </span>
+                      <button type="button" onClick={() => quitarItem(i)}>
+                        Quitar
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {items.length > 0 && (
+                <p style={{ textAlign: 'right', marginTop: 8 }}>
+                  <strong>Total: ${totalItems}</strong>
+                </p>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            <input
+              placeholder="Descripción"
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+              required
+            />
+            <input
+              placeholder="Monto"
+              type="number"
+              value={monto}
+              onChange={(e) => setMonto(e.target.value)}
+              required
+            />
+            <select value={categoria} onChange={(e) => setCategoria(e.target.value)} required>
+              {CATEGORIAS.map((c) => (
+                <option key={c.valor} value={c.valor}>
+                  {c.icono} {c.valor}
+                </option>
+              ))}
+            </select>
+            <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
+          </>
         )}
+
+        <div style={{ marginTop: 12 }}>
+          <button type="submit">{editandoId !== null ? 'Guardar cambios' : 'Agregar'}</button>
+          {editandoId !== null && (
+            <button type="button" onClick={limpiarFormulario}>
+              Cancelar
+            </button>
+          )}
+        </div>
       </form>
 
       <ul style={{ listStyle: 'none', padding: 0 }}>
@@ -184,19 +343,30 @@ useEffect(() => {
           <li
             key={g.id}
             style={{
-              display: 'flex',
-              justifyContent: 'space-between',
               borderBottom: '1px solid #ccc',
               padding: '8px 0',
             }}
           >
-            <span>
-              {CATEGORIAS.find((c) => c.valor === g.categoria)?.icono ?? '📦'} {g.descripcion} — ${g.monto} ({g.categoria})
-            </span>
-            <span>
-              <button onClick={() => handleEditar(g)}>Editar</button>{' '}
-              <button onClick={() => handleEliminar(g.id)}>Eliminar</button>
-            </span>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>
+                {CATEGORIAS.find((c) => c.valor === g.categoria)?.icono ?? '📦'} {g.descripcion} — $
+                {g.monto} ({g.categoria})
+                {g.lugar && <span style={{ color: '#888' }}> · {g.lugar}</span>}
+              </span>
+              <span>
+                <button onClick={() => handleEditar(g)}>Editar</button>{' '}
+                <button onClick={() => handleEliminar(g.id)}>Eliminar</button>
+              </span>
+            </div>
+            {g.items && g.items.length > 0 && (
+              <ul style={{ listStyle: 'none', paddingLeft: 16, marginTop: 4, color: '#666', fontSize: 14 }}>
+                {g.items.map((item) => (
+                  <li key={item.id}>
+                    {item.producto}: {item.cantidad} x ${item.precioUnitario}
+                  </li>
+                ))}
+              </ul>
+            )}
           </li>
         ))}
       </ul>
