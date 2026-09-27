@@ -9,14 +9,22 @@ interface Gasto {
   fecha: string;
 }
 
+interface Resumen {
+  total: number;
+  porCategoria: { categoria: string; total: number }[];
+}
+
 const API_URL = 'http://localhost:3000';
 
 function App() {
   const [gastos, setGastos] = useState<Gasto[]>([]);
+  const [resumen, setResumen] = useState<Resumen | null>(null);
   const [descripcion, setDescripcion] = useState('');
   const [monto, setMonto] = useState('');
   const [categoria, setCategoria] = useState('');
   const [editandoId, setEditandoId] = useState<number | null>(null);
+  const [fecha, setFecha] = useState(() => new Date().toISOString().split('T')[0]);
+  
 
   const cargarGastos = async () => {
     const res = await fetch(`${API_URL}/gastos`);
@@ -24,14 +32,24 @@ function App() {
     setGastos(data);
   };
 
+  const cargarResumen = async () => {
+    const res = await fetch(`${API_URL}/gastos/resumen`);
+    const data = await res.json();
+    setResumen(data);
+  };
+
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void cargarGastos();
   }, []);
+
+  
 
   const limpiarFormulario = () => {
     setDescripcion('');
     setMonto('');
     setCategoria('');
+    setFecha(new Date().toISOString().split('T')[0]);
     setEditandoId(null);
   };
 
@@ -47,6 +65,7 @@ function App() {
           descripcion,
           monto: Number(monto),
           categoria,
+          fecha,
         }),
       });
     } else {
@@ -64,12 +83,14 @@ function App() {
 
     limpiarFormulario();
     cargarGastos();
+    cargarResumen();
   };
 
   const handleEliminar = async (id: number) => {
     await fetch(`${API_URL}/gastos/${id}`, { method: 'DELETE' });
     if (editandoId === id) limpiarFormulario();
     cargarGastos();
+    cargarResumen();
   };
 
   const handleEditar = (gasto: Gasto) => {
@@ -77,11 +98,25 @@ function App() {
     setDescripcion(gasto.descripcion);
     setMonto(String(gasto.monto));
     setCategoria(gasto.categoria);
+    setFecha(gasto.fecha.split('T')[0]);
   };
 
   return (
     <div style={{ maxWidth: 500, margin: '0 auto', padding: 20 }}>
       <h1>Control de Gastos</h1>
+
+      {resumen && (
+        <div style={{ marginBottom: 20, padding: 12, border: '1px solid #ccc', borderRadius: 8 }}>
+          <strong>Total general: ${resumen.total}</strong>
+          <ul style={{ listStyle: 'none', padding: 0, marginTop: 8 }}>
+            {resumen.porCategoria.map((c) => (
+              <li key={c.categoria}>
+                {c.categoria}: ${c.total}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} style={{ marginBottom: 20 }}>
         <input
@@ -101,6 +136,12 @@ function App() {
           placeholder="Categoría"
           value={categoria}
           onChange={(e) => setCategoria(e.target.value)}
+          required
+        />
+        <input
+          type="date"
+          value={fecha}
+          onChange={(e) => setFecha(e.target.value)}
           required
         />
         <button type="submit">

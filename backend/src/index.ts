@@ -16,16 +16,22 @@ app.get('/', (req, res) => {
   res.json({ message: 'Servidor funcionando correctamente' });
 });
 
+
 // Crear un gasto nuevo
 app.post('/gastos', async (req, res) => {
   try {
-    const { descripcion, monto, categoria } = req.body;
+    const { descripcion, monto, categoria, fecha } = req.body;
     const gasto = await prisma.gasto.create({
-      data: { descripcion, monto, categoria },
+      data: {
+        descripcion,
+        monto,
+        categoria,
+        ...(fecha ? { fecha: new Date(fecha) } : {}),
+      },
     });
     res.status(201).json(gasto);
   } catch (error) {
-    console.log(error);
+    console.error(error);
     res.status(500).json({ error: 'Error al crear el gasto' });
   }
 });
@@ -42,14 +48,45 @@ app.get('/gastos', async (req, res) => {
   }
 });
 
+// Resumen de gastos: total general y por categoría
+app.get('/gastos/resumen', async (req, res) => {
+  try {
+    const totalGeneral = await prisma.gasto.aggregate({
+      _sum: { monto: true },
+    });
+
+    const porCategoria = await prisma.gasto.groupBy({
+      by: ['categoria'],
+      _sum: { monto: true },
+      orderBy: { _sum: { monto: 'desc' } },
+    });
+
+    res.json({
+      total: totalGeneral._sum.monto ?? 0,
+      porCategoria: porCategoria.map((c) => ({
+        categoria: c.categoria,
+        total: c._sum.monto ?? 0,
+      })),
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al obtener el resumen' });
+  }
+});
+
 // Editar un gasto existente
 app.put('/gastos/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { descripcion, monto, categoria } = req.body;
+    const { descripcion, monto, categoria, fecha } = req.body;
     const gasto = await prisma.gasto.update({
       where: { id: Number(id) },
-      data: { descripcion, monto, categoria },
+      data: {
+        descripcion,
+        monto,
+        categoria,
+        ...(fecha ? { fecha: new Date(fecha) } : {}),
+      },
     });
     res.json(gasto);
   } catch (error) {
