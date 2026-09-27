@@ -9,6 +9,11 @@ const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3000;
 
+function parsearFechaLocal(fechaStr: string): Date {
+  const [year, month, day] = fechaStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
 app.use(cors());
 app.use(express.json());
 
@@ -52,6 +57,7 @@ app.get('/gastos', async (req, res) => {
     const gastos = await prisma.gasto.findMany({
       where,
       orderBy: { fecha: 'desc' },
+      include: { items: true },
     });
     res.json(gastos);
   } catch (error) {
@@ -130,6 +136,47 @@ app.delete('/gastos/:id', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error al eliminar el gasto' });
+  }
+});
+
+// Crear una compra grande con múltiples items
+app.post('/gastos/compra-grande', async (req, res) => {
+  try {
+    const { descripcion, categoria, fecha, lugar, items } = req.body;
+    // items: [{ producto, cantidad, precioUnitario }, ...]
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'Debe incluir al menos un item' });
+    }
+
+    const montoTotal = items.reduce(
+      (acc: number, item: { cantidad: number; precioUnitario: number }) =>
+        acc + item.cantidad * item.precioUnitario,
+      0
+    );
+
+    const gasto = await prisma.gasto.create({
+      data: {
+        descripcion,
+        categoria,
+        lugar,
+        monto: montoTotal,
+        ...(fecha ? { fecha: parsearFechaLocal(fecha) } : {}),
+        items: {
+          create: items.map((item: { producto: string; cantidad: number; precioUnitario: number }) => ({
+            producto: item.producto,
+            cantidad: item.cantidad,
+            precioUnitario: item.precioUnitario,
+          })),
+        },
+      },
+      include: { items: true },
+    });
+
+    res.status(201).json(gasto);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al crear la compra grande' });
   }
 });
 
