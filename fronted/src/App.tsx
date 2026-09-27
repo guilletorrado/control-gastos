@@ -16,6 +16,7 @@ function App() {
   const [descripcion, setDescripcion] = useState('');
   const [monto, setMonto] = useState('');
   const [categoria, setCategoria] = useState('');
+  const [editandoId, setEditandoId] = useState<number | null>(null);
 
   const cargarGastos = async () => {
     const res = await fetch(`${API_URL}/gastos`);
@@ -24,29 +25,58 @@ function App() {
   };
 
   useEffect(() => {
-    cargarGastos();
+    void cargarGastos();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await fetch(`${API_URL}/gastos`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        descripcion,
-        monto: Number(monto),
-        categoria,
-      }),
-    });
+  const limpiarFormulario = () => {
     setDescripcion('');
     setMonto('');
     setCategoria('');
+    setEditandoId(null);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (editandoId !== null) {
+      // Modo edición: PUT
+      await fetch(`${API_URL}/gastos/${editandoId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          descripcion,
+          monto: Number(monto),
+          categoria,
+        }),
+      });
+    } else {
+      // Modo creación: POST
+      await fetch(`${API_URL}/gastos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          descripcion,
+          monto: Number(monto),
+          categoria,
+        }),
+      });
+    }
+
+    limpiarFormulario();
     cargarGastos();
   };
 
   const handleEliminar = async (id: number) => {
     await fetch(`${API_URL}/gastos/${id}`, { method: 'DELETE' });
+    if (editandoId === id) limpiarFormulario();
     cargarGastos();
+  };
+
+  const handleEditar = (gasto: Gasto) => {
+    setEditandoId(gasto.id);
+    setDescripcion(gasto.descripcion);
+    setMonto(String(gasto.monto));
+    setCategoria(gasto.categoria);
   };
 
   return (
@@ -73,7 +103,14 @@ function App() {
           onChange={(e) => setCategoria(e.target.value)}
           required
         />
-        <button type="submit">Agregar</button>
+        <button type="submit">
+          {editandoId !== null ? 'Guardar cambios' : 'Agregar'}
+        </button>
+        {editandoId !== null && (
+          <button type="button" onClick={limpiarFormulario}>
+            Cancelar
+          </button>
+        )}
       </form>
 
       <ul style={{ listStyle: 'none', padding: 0 }}>
@@ -90,7 +127,10 @@ function App() {
             <span>
               {g.descripcion} — ${g.monto} ({g.categoria})
             </span>
-            <button onClick={() => handleEliminar(g.id)}>Eliminar</button>
+            <span>
+              <button onClick={() => handleEditar(g)}>Editar</button>{' '}
+              <button onClick={() => handleEliminar(g.id)}>Eliminar</button>
+            </span>
           </li>
         ))}
       </ul>
