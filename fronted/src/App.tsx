@@ -16,34 +16,49 @@ interface Resumen {
 
 const API_URL = 'http://localhost:3000';
 
+const hoy = new Date();
+const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
+
+const nombreMes = (mes: string) => {
+  const [year, month] = mes.split('-').map(Number);
+  const fecha = new Date(year, month - 1, 1);
+  return fecha.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+};
+
+const sumarMes = (mes: string, delta: number) => {
+  const [year, month] = mes.split('-').map(Number);
+  const fecha = new Date(year, month - 1 + delta, 1);
+  return `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
+};
+
 function App() {
   const [gastos, setGastos] = useState<Gasto[]>([]);
   const [resumen, setResumen] = useState<Resumen | null>(null);
+  const [mesSeleccionado, setMesSeleccionado] = useState(mesActual);
   const [descripcion, setDescripcion] = useState('');
   const [monto, setMonto] = useState('');
   const [categoria, setCategoria] = useState('');
-  const [editandoId, setEditandoId] = useState<number | null>(null);
   const [fecha, setFecha] = useState(() => new Date().toISOString().split('T')[0]);
-  
+  const [editandoId, setEditandoId] = useState<number | null>(null);
 
-  const cargarGastos = async () => {
-    const res = await fetch(`${API_URL}/gastos`);
+  const cargarGastos = async (mes: string) => {
+    const res = await fetch(`${API_URL}/gastos?mes=${mes}`);
     const data = await res.json();
     setGastos(data);
   };
 
-  const cargarResumen = async () => {
-    const res = await fetch(`${API_URL}/gastos/resumen`);
+  const cargarResumen = async (mes: string) => {
+    const res = await fetch(`${API_URL}/gastos/resumen?mes=${mes}`);
     const data = await res.json();
     setResumen(data);
   };
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void cargarGastos();
-  }, []);
-
-  
+useEffect(() => {
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  void cargarGastos(mesSeleccionado);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  void cargarResumen(mesSeleccionado);
+}, [mesSeleccionado]);
 
   const limpiarFormulario = () => {
     setDescripcion('');
@@ -57,40 +72,29 @@ function App() {
     e.preventDefault();
 
     if (editandoId !== null) {
-      // Modo edición: PUT
       await fetch(`${API_URL}/gastos/${editandoId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          descripcion,
-          monto: Number(monto),
-          categoria,
-          fecha,
-        }),
+        body: JSON.stringify({ descripcion, monto: Number(monto), categoria, fecha }),
       });
     } else {
-      // Modo creación: POST
       await fetch(`${API_URL}/gastos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          descripcion,
-          monto: Number(monto),
-          categoria,
-        }),
+        body: JSON.stringify({ descripcion, monto: Number(monto), categoria, fecha }),
       });
     }
 
     limpiarFormulario();
-    cargarGastos();
-    cargarResumen();
+    cargarGastos(mesSeleccionado);
+    cargarResumen(mesSeleccionado);
   };
 
   const handleEliminar = async (id: number) => {
     await fetch(`${API_URL}/gastos/${id}`, { method: 'DELETE' });
     if (editandoId === id) limpiarFormulario();
-    cargarGastos();
-    cargarResumen();
+    cargarGastos(mesSeleccionado);
+    cargarResumen(mesSeleccionado);
   };
 
   const handleEditar = (gasto: Gasto) => {
@@ -105,9 +109,20 @@ function App() {
     <div style={{ maxWidth: 500, margin: '0 auto', padding: 20 }}>
       <h1>Control de Gastos</h1>
 
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <button onClick={() => setMesSeleccionado((m) => sumarMes(m, -1))}>← Mes anterior</button>
+        <strong style={{ textTransform: 'capitalize' }}>{nombreMes(mesSeleccionado)}</strong>
+        <button
+          onClick={() => setMesSeleccionado((m) => sumarMes(m, 1))}
+          disabled={mesSeleccionado >= mesActual}
+        >
+          Mes siguiente →
+        </button>
+      </div>
+
       {resumen && (
         <div style={{ marginBottom: 20, padding: 12, border: '1px solid #ccc', borderRadius: 8 }}>
-          <strong>Total general: ${resumen.total}</strong>
+          <strong>Total del mes: ${resumen.total}</strong>
           <ul style={{ listStyle: 'none', padding: 0, marginTop: 8 }}>
             {resumen.porCategoria.map((c) => (
               <li key={c.categoria}>
@@ -138,15 +153,8 @@ function App() {
           onChange={(e) => setCategoria(e.target.value)}
           required
         />
-        <input
-          type="date"
-          value={fecha}
-          onChange={(e) => setFecha(e.target.value)}
-          required
-        />
-        <button type="submit">
-          {editandoId !== null ? 'Guardar cambios' : 'Agregar'}
-        </button>
+        <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
+        <button type="submit">{editandoId !== null ? 'Guardar cambios' : 'Agregar'}</button>
         {editandoId !== null && (
           <button type="button" onClick={limpiarFormulario}>
             Cancelar

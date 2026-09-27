@@ -39,11 +39,23 @@ app.post('/gastos', async (req, res) => {
 // Listar todos los gastos
 app.get('/gastos', async (req, res) => {
   try {
+    const { mes } = req.query; // formato "YYYY-MM"
+    let where = {};
+
+    if (typeof mes === 'string' && /^\d{4}-\d{2}$/.test(mes)) {
+      const [year, month] = mes.split('-').map(Number);
+      const inicio = new Date(year, month - 1, 1);
+      const fin = new Date(year, month, 1);
+      where = { fecha: { gte: inicio, lt: fin } };
+    }
+
     const gastos = await prisma.gasto.findMany({
+      where,
       orderBy: { fecha: 'desc' },
     });
     res.json(gastos);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: 'Error al obtener los gastos' });
   }
 });
@@ -51,12 +63,24 @@ app.get('/gastos', async (req, res) => {
 // Resumen de gastos: total general y por categoría
 app.get('/gastos/resumen', async (req, res) => {
   try {
+    const { mes } = req.query;
+    let where = {};
+
+    if (typeof mes === 'string' && /^\d{4}-\d{2}$/.test(mes)) {
+      const [year, month] = mes.split('-').map(Number);
+      const inicio = new Date(year, month - 1, 1);
+      const fin = new Date(year, month, 1);
+      where = { fecha: { gte: inicio, lt: fin } };
+    }
+
     const totalGeneral = await prisma.gasto.aggregate({
+      where,
       _sum: { monto: true },
     });
 
     const porCategoria = await prisma.gasto.groupBy({
       by: ['categoria'],
+      where,
       _sum: { monto: true },
       orderBy: { _sum: { monto: 'desc' } },
     });
