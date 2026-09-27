@@ -108,15 +108,49 @@ app.get('/gastos/resumen', async (req, res) => {
 app.put('/gastos/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { descripcion, monto, categoria, fecha } = req.body;
+    const { descripcion, monto, categoria, fecha, lugar, items } = req.body;
+    const fechaData = fecha ? { fecha: parsearFechaLocal(fecha) } : {};
+
+    // Compra grande: reemplaza los items y recalcula el total
+    if (Array.isArray(items)) {
+      if (items.length === 0) {
+        return res.status(400).json({ error: 'Debe incluir al menos un item' });
+      }
+
+      const montoTotal = items.reduce(
+        (acc: number, item: { cantidad: number; precioUnitario: number }) =>
+          acc + item.cantidad * item.precioUnitario,
+        0
+      );
+
+      const gasto = await prisma.gasto.update({
+        where: { id: Number(id) },
+        data: {
+          descripcion,
+          categoria,
+          lugar,
+          monto: montoTotal,
+          ...fechaData,
+          items: {
+            deleteMany: {},
+            create: items.map(
+              (item: { producto: string; cantidad: number; precioUnitario: number }) => ({
+                producto: item.producto,
+                cantidad: item.cantidad,
+                precioUnitario: item.precioUnitario,
+              })
+            ),
+          },
+        },
+        include: { items: true },
+      });
+      return res.json(gasto);
+    }
+
+    // Gasto simple
     const gasto = await prisma.gasto.update({
       where: { id: Number(id) },
-      data: {
-        descripcion,
-        monto,
-        categoria,
-        ...(fecha ? { fecha: new Date(fecha) } : {}),
-      },
+      data: { descripcion, monto, categoria, ...fechaData },
     });
     res.json(gasto);
   } catch (error) {
