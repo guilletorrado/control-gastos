@@ -15,10 +15,21 @@ datasource db {
 }
 
 model Gasto {
-  id          Int      @id @default(autoincrement())
+  id          Int         @id @default(autoincrement())
   descripcion String
   monto       Float
   categoria   String
-  fecha       DateTime @default(now())
-  creadoEn    DateTime @default(now())
+  fecha       DateTime    @default(now())
+  creadoEn    DateTime    @default(now())
+  lugar       String?
+  items       ItemGasto[]
+}
+
+model ItemGasto {
+  id             Int    @id @default(autoincrement())
+  producto       String
+  cantidad       Float
+  precioUnitario Float
+  gastoId        Int
+  gasto          Gasto  @relation(fields: [gastoId], references: [id], onDelete: Cascade)
 }
