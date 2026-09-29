@@ -115,39 +115,55 @@ function App() {
   };
 
   return (
-    <div style={{ maxWidth: 500, margin: '0 auto', padding: 20 }}>
-      <h1>Control de Gastos</h1>
+    <div className="app">
+      <div className="app__header">
+        <h1 className="app__titulo">Control de Gastos</h1>
+        <SelectorMes mes={mesSeleccionado} onCambiarMes={setMesSeleccionado} />
+      </div>
 
-      <SelectorMes mes={mesSeleccionado} onCambiarMes={setMesSeleccionado} />
-      <ResumenMensual resumen={resumen} />
+      <div className="app__grid">
+        <div className="app__col-form">
+          <div className="panel">
+            <SelectorTipoMovimiento tipo={tipoMovimiento} onCambiar={setTipoMovimiento} />
 
-      <SelectorTipoMovimiento tipo={tipoMovimiento} onCambiar={setTipoMovimiento} />
+            {tipoMovimiento === 'egreso' ? (
+              <FormularioGasto
+                gastoEditando={gastoEditando}
+                onGuardarSimple={handleGuardarSimple}
+                onGuardarCompraGrande={handleGuardarCompraGrande}
+                onCancelar={() => setGastoEditando(null)}
+              />
+            ) : (
+              <FormularioIngreso
+                ingresoEditando={ingresoEditando}
+                onGuardar={handleGuardarIngreso}
+                onCancelar={() => setIngresoEditando(null)}
+              />
+            )}
+          </div>
+        </div>
 
-      {tipoMovimiento === 'egreso' ? (
-        <FormularioGasto
-          gastoEditando={gastoEditando}
-          onGuardarSimple={handleGuardarSimple}
-          onGuardarCompraGrande={handleGuardarCompraGrande}
-          onCancelar={() => setGastoEditando(null)}
+        <div className="app__col-derecha">
+          <div className="panel">
+            <ResumenMensual resumen={resumen} />
+          </div>
+        </div>
+      </div>
+
+      <div className="panel">
+        <ListaGastos
+          gastos={gastos}
+          ingresos={ingresos}
+          onEditarGasto={handleEditarGasto}
+          onEliminarGasto={handleEliminarGasto}
+          onEditarIngreso={handleEditarIngreso}
+          onEliminarIngreso={handleEliminarIngreso}
         />
-      ) : (
-        <FormularioIngreso
-          ingresoEditando={ingresoEditando}
-          onGuardar={handleGuardarIngreso}
-          onCancelar={() => setIngresoEditando(null)}
-        />
-      )}
+      </div>
 
-      <ListaGastos
-        gastos={gastos}
-        ingresos={ingresos}
-        onEditarGasto={handleEditarGasto}
-        onEliminarGasto={handleEliminarGasto}
-        onEditarIngreso={handleEditarIngreso}
-        onEliminarIngreso={handleEliminarIngreso}
-      />
-
-      <ComparadorPrecios />
+      <div className="panel">
+        <ComparadorPrecios />
+      </div>
     </div>
   );
 }

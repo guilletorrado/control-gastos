@@ -7,11 +7,17 @@ interface Props {
 
 export default function SelectorMes({ mes, onCambiarMes }: Props) {
     return (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <button onClick={() => onCambiarMes(sumarMes(mes, -1))}>← Mes anterior</button>
-        <strong style={{ textTransform: 'capitalize' }}>{nombreMes(mes)}</strong>
-        <button onClick={() => onCambiarMes(sumarMes(mes, 1))} disabled={mes >= mesActual}>
-            Mes siguiente →
+        <div className="selector-mes">
+        <button className="selector-mes__boton" onClick={() => onCambiarMes(sumarMes(mes, -1))}>
+            ← anterior
+        </button>
+        <span className="selector-mes__nombre">{nombreMes(mes)}</span>
+        <button
+            className="selector-mes__boton"
+            onClick={() => onCambiarMes(sumarMes(mes, 1))}
+            disabled={mes >= mesActual}
+        >
+            siguiente →
         </button>
         </div>
     );

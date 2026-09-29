@@ -166,142 +166,165 @@ export default function FormularioGasto({
     };
 
     return (
-        <form onSubmit={handleSubmit} style={{ marginBottom: 20 }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-            <input
+    <form onSubmit={handleSubmit} className="formulario">
+        <label className="formulario__check">
+        <input
             type="checkbox"
             checked={esCompraGrande}
             onChange={(e) => setEsCompraGrande(e.target.checked)}
             disabled={gastoEditando !== null}
-            />
-            Es una compra grande
+        />
+        Es una compra grande
         </label>
 
         {esCompraGrande ? (
-            <>
+        <>
             <input
-                placeholder="Descripción (opcional)"
-                value={descripcion}
-                onChange={(e) => setDescripcion(e.target.value)}
+            className="formulario__campo"
+            placeholder="Descripción (opcional)"
+            value={descripcion}
+            onChange={(e) => setDescripcion(e.target.value)}
             />
             <input
-                placeholder="Lugar (ej: Coto, Almacén del barrio)"
-                value={lugar}
-                onChange={(e) => setLugar(e.target.value)}
-                required
+            className="formulario__campo"
+            placeholder="Lugar (ej: Coto, Almacén del barrio)"
+            value={lugar}
+            onChange={(e) => setLugar(e.target.value)}
+            required
             />
-            <select value={categoria} onChange={(e) => setCategoria(e.target.value)} required>
-                {CATEGORIAS.map((c) => (
+            <select
+            className="formulario__campo"
+            value={categoria}
+            onChange={(e) => setCategoria(e.target.value)}
+            required
+            >
+            {CATEGORIAS.map((c) => (
                 <option key={c.valor} value={c.valor}>
-                    {c.icono} {c.valor}
+                {c.icono} {c.valor}
                 </option>
-                ))}
+            ))}
             </select>
-            <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
+            <input
+            className="formulario__campo"
+            type="date"
+            value={fecha}
+            onChange={(e) => setFecha(e.target.value)}
+            required
+            />
 
-            <div style={{ border: '1px dashed #999', borderRadius: 8, padding: 12, margin: '12px 0' }}>
-                <strong>{editandoItemIndex !== null ? 'Editando producto' : 'Agregar productos'}</strong>
-                <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+            <div className="items-builder">
+            <p className="items-builder__titulo">
+                {editandoItemIndex !== null ? 'editando producto' : 'agregar productos'}
+            </p>
+            <div className="items-builder__campos">
                 <input
-                    placeholder="Producto"
-                    value={productoTemp}
-                    onChange={(e) => setProductoTemp(e.target.value)}
+                className="formulario__campo"
+                placeholder="Producto"
+                value={productoTemp}
+                onChange={(e) => setProductoTemp(e.target.value)}
                 />
                 <input
-                    placeholder="Cantidad"
-                    type="number"
-                    value={cantidadTemp}
-                    onChange={(e) => setCantidadTemp(e.target.value)}
-                    style={{ width: 90 }}
+                className="formulario__campo"
+                placeholder="Cant."
+                type="number"
+                value={cantidadTemp}
+                onChange={(e) => setCantidadTemp(e.target.value)}
                 />
                 <input
-                    placeholder="Precio unitario"
-                    type="number"
-                    value={precioTemp}
-                    onChange={(e) => setPrecioTemp(e.target.value)}
-                    style={{ width: 120 }}
+                className="formulario__campo"
+                placeholder="Precio u."
+                type="number"
+                value={precioTemp}
+                onChange={(e) => setPrecioTemp(e.target.value)}
                 />
-                <button type="button" onClick={agregarItem}>
-                    {editandoItemIndex !== null ? 'Guardar producto' : '+ Agregar producto'}
+            </div>
+            <div className="formulario__acciones">
+                <button type="button" className="boton" onClick={agregarItem}>
+                {editandoItemIndex !== null ? 'Guardar producto' : '+ Agregar producto'}
                 </button>
                 {editandoItemIndex !== null && (
-                    <button type="button" onClick={cancelarEdicionItem}>
+                <button type="button" className="boton--texto" onClick={cancelarEdicionItem}>
                     Cancelar
-                    </button>
-                )}
-                </div>
-
-                {items.length > 0 && (
-                <ul style={{ listStyle: 'none', padding: 0, marginTop: 12 }}>
-                    {items.map((item, i) => (
-                    <li
-                        key={i}
-                        style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        borderBottom: '1px solid #ddd',
-                        padding: '4px 0',
-                        backgroundColor: editandoItemIndex === i ? '#fff3cd' : 'transparent',
-                        }}
-                    >
-                        <span>
-                        {item.producto} — {item.cantidad} x ${item.precioUnitario} = $
-                        {item.cantidad * item.precioUnitario}
-                        </span>
-                        <span>
-                        <button type="button" onClick={() => editarItem(i)}>
-                            Editar
-                        </button>{' '}
-                        <button type="button" onClick={() => quitarItem(i)}>
-                            Quitar
-                        </button>
-                        </span>
-                    </li>
-                    ))}
-                </ul>
-                )}
-
-                {items.length > 0 && (
-                <p style={{ textAlign: 'right', marginTop: 8 }}>
-                    <strong>Total: ${totalItems}</strong>
-                </p>
+                </button>
                 )}
             </div>
-            </>
-        ) : (
-            <>
-            <input
-                placeholder="Descripción"
-                value={descripcion}
-                onChange={(e) => setDescripcion(e.target.value)}
-                required
-            />
-            <input
-                placeholder="Monto"
-                type="number"
-                value={monto}
-                onChange={(e) => setMonto(e.target.value)}
-                required
-            />
-            <select value={categoria} onChange={(e) => setCategoria(e.target.value)} required>
-                {CATEGORIAS.map((c) => (
-                <option key={c.valor} value={c.valor}>
-                    {c.icono} {c.valor}
-                </option>
+
+            {items.length > 0 && (
+                <ul className="items-lista">
+                {items.map((item, i) => (
+                    <li
+                    key={i}
+                    className={`items-lista__item ${editandoItemIndex === i ? 'editando' : ''}`}
+                    >
+                    <span>
+                        {item.producto} — {item.cantidad} x ${item.precioUnitario}
+                    </span>
+                    <span className="items-lista__monto">
+                        ${item.cantidad * item.precioUnitario}{' '}
+                        <button type="button" className="boton--texto" onClick={() => editarItem(i)}>
+                        editar
+                        </button>{' '}
+                        <button type="button" className="boton--texto" onClick={() => quitarItem(i)}>
+                        quitar
+                        </button>
+                    </span>
+                    </li>
                 ))}
+                </ul>
+            )}
+
+            {items.length > 0 && <p className="items-builder__total">Total: ${totalItems}</p>}
+            </div>
+        </>
+        ) : (
+        <>
+            <input
+            className="formulario__campo"
+            placeholder="Descripción"
+            value={descripcion}
+            onChange={(e) => setDescripcion(e.target.value)}
+            required
+            />
+            <input
+            className="formulario__campo"
+            placeholder="Monto"
+            type="number"
+            value={monto}
+            onChange={(e) => setMonto(e.target.value)}
+            required
+            />
+            <select
+            className="formulario__campo"
+            value={categoria}
+            onChange={(e) => setCategoria(e.target.value)}
+            required
+            >
+            {CATEGORIAS.map((c) => (
+                <option key={c.valor} value={c.valor}>
+                {c.icono} {c.valor}
+                </option>
+            ))}
             </select>
-            <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
-            </>
+            <input
+            className="formulario__campo"
+            type="date"
+            value={fecha}
+            onChange={(e) => setFecha(e.target.value)}
+            required
+            />
+        </>
         )}
 
-        <div style={{ marginTop: 12 }}>
-            <button type="submit">{gastoEditando !== null ? 'Guardar cambios' : 'Agregar'}</button>
-            {gastoEditando !== null && (
-            <button type="button" onClick={handleCancelar}>
-                Cancelar
+        <div className="formulario__acciones">
+        <button type="submit" className="boton">
+            {gastoEditando !== null ? 'Guardar cambios' : 'Agregar'}
+        </button>
+        {gastoEditando !== null && (
+            <button type="button" className="boton boton--secundario" onClick={handleCancelar}>
+            Cancelar
             </button>
-            )}
+        )}
         </div>
-        </form>
+    </form>
     );
 }

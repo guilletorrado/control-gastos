@@ -60,19 +60,20 @@ interface ResumenLugar {
     const resumenPorLugar = calcularResumenPorLugar(registros);
     const totalUnidades = registros.reduce((acc, r) => acc + r.cantidad, 0);
 
-    return (
-        <div style={{ marginTop: 32, padding: 12, border: '1px solid #ccc', borderRadius: 8 }}>
-        <h2>Comparador de precios</h2>
+return (
+    <div className="comparador">
+        <h2 className="comparador__titulo">Comparador de precios</h2>
 
-        <form onSubmit={handleBuscar} style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-            <input
+        <form onSubmit={handleBuscar} className="comparador__form">
+        <input
+            className="formulario__campo"
             placeholder="Producto (ej: leche)"
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
-            />
-            <button type="submit" disabled={cargando}>
+        />
+        <button type="submit" className="boton" disabled={cargando}>
             {cargando ? 'Buscando...' : 'Buscar'}
-            </button>
+        </button>
         </form>
 
         {error && <p>{error}</p>}
@@ -80,52 +81,48 @@ interface ResumenLugar {
         {buscado && registros.length === 0 && <p>No se encontraron compras de "{nombre}".</p>}
 
         {registros.length > 0 && (
-            <>
+        <>
             <p>
-                Compraste <strong>{totalUnidades}</strong> unidades en total, en {registros.length}{' '}
-                {registros.length === 1 ? 'compra' : 'compras'}.
+            Compraste <strong>{totalUnidades}</strong> unidades en total, en {registros.length}{' '}
+            {registros.length === 1 ? 'compra' : 'compras'}.
             </p>
 
-            <strong>Por lugar (del más barato al más caro, según el último precio)</strong>
-            <table style={{ width: '100%', marginTop: 8, borderCollapse: 'collapse' }}>
-                <thead>
-                <tr style={{ textAlign: 'left' }}>
-                    <th>Lugar</th>
-                    <th>Último</th>
-                    <th>Mínimo</th>
-                    <th>Promedio</th>
-                    <th>Unidades</th>
+            <table className="comparador__tabla">
+            <thead>
+                <tr>
+                <th>Lugar</th>
+                <th>Último</th>
+                <th>Mínimo</th>
+                <th>Promedio</th>
+                <th>Unid.</th>
                 </tr>
-                </thead>
-                <tbody>
+            </thead>
+            <tbody>
                 {resumenPorLugar.map((r, i) => (
-                    <tr key={r.lugar} style={{ borderTop: '1px solid #ddd' }}>
+                <tr key={r.lugar}>
                     <td>
-                        {i === 0 && resumenPorLugar.length > 1 ? '⭐ ' : ''}
-                        {r.lugar}
+                    {i === 0 && resumenPorLugar.length > 1 ? '⭐ ' : ''}
+                    {r.lugar}
                     </td>
                     <td>${r.ultimoPrecio}</td>
                     <td>${r.minimo}</td>
                     <td>${r.promedio.toFixed(2)}</td>
                     <td>{r.unidades}</td>
-                    </tr>
+                </tr>
                 ))}
-                </tbody>
+            </tbody>
             </table>
 
-            <div style={{ marginTop: 16 }}>
-                <strong>Historial</strong>
-                <ul style={{ listStyle: 'none', padding: 0, marginTop: 8 }}>
-                {registros.map((r) => (
-                    <li key={r.id} style={{ borderTop: '1px solid #ddd', padding: '4px 0' }}>
-                    {new Date(r.fecha).toLocaleDateString('es-AR')} · {r.lugar ?? 'Sin lugar'} ·{' '}
-                    {r.producto}: {r.cantidad} x ${r.precioUnitario}
-                    </li>
-                ))}
-                </ul>
-            </div>
-            </>
+            <ul className="comparador__historial">
+            {registros.map((r) => (
+                <li key={r.id}>
+                {new Date(r.fecha).toLocaleDateString('es-AR')} · {r.lugar ?? 'Sin lugar'} ·{' '}
+                {r.producto}: {r.cantidad} x ${r.precioUnitario}
+                </li>
+            ))}
+            </ul>
+        </>
         )}
-        </div>
+    </div>
     );
 }

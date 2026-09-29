@@ -4,34 +4,19 @@ interface Props {
 }
 
 export default function SelectorTipoMovimiento({ tipo, onCambiar }: Props) {
-    const estiloBase: React.CSSProperties = {
-        flex: 1,
-        padding: 8,
-        border: '1px solid #999',
-        cursor: 'pointer',
-    };
-
     return (
-        <div style={{ display: 'flex', marginBottom: 12 }}>
+        <div className="tipo-movimiento">
         <button
             type="button"
             onClick={() => onCambiar('egreso')}
-            style={{
-            ...estiloBase,
-            backgroundColor: tipo === 'egreso' ? '#f8d7da' : '#f5f5f5',
-            fontWeight: tipo === 'egreso' ? 'bold' : 'normal',
-            }}
+            className={`tipo-movimiento__boton egreso ${tipo === 'egreso' ? 'activo' : ''}`}
         >
             − Egreso
         </button>
         <button
             type="button"
             onClick={() => onCambiar('ingreso')}
-            style={{
-            ...estiloBase,
-            backgroundColor: tipo === 'ingreso' ? '#d4edda' : '#f5f5f5',
-            fontWeight: tipo === 'ingreso' ? 'bold' : 'normal',
-            }}
+            className={`tipo-movimiento__boton ingreso ${tipo === 'ingreso' ? 'activo' : ''}`}
         >
             + Ingreso
         </button>

@@ -46,43 +46,59 @@ export default function FormularioIngreso({ ingresoEditando, onGuardar, onCancel
     };
 
     return (
-        <form onSubmit={handleSubmit} style={{ marginBottom: 20 }}>
+    <form onSubmit={handleSubmit} className="formulario">
         <input
-            placeholder="Descripción"
-            value={descripcion}
-            onChange={(e) => setDescripcion(e.target.value)}
-            required
+        className="formulario__campo"
+        placeholder="Descripción"
+        value={descripcion}
+        onChange={(e) => setDescripcion(e.target.value)}
+        required
         />
         <input
-            placeholder="Monto"
-            type="number"
-            value={monto}
-            onChange={(e) => setMonto(e.target.value)}
-            required
+        className="formulario__campo"
+        placeholder="Monto"
+        type="number"
+        value={monto}
+        onChange={(e) => setMonto(e.target.value)}
+        required
         />
-        <select value={categoria} onChange={(e) => setCategoria(e.target.value)} required>
-            {CATEGORIAS_INGRESO.map((c) => (
+        <select
+        className="formulario__campo"
+        value={categoria}
+        onChange={(e) => setCategoria(e.target.value)}
+        required
+        >
+        {CATEGORIAS_INGRESO.map((c) => (
             <option key={c.valor} value={c.valor}>
-                {c.icono} {c.valor}
+            {c.icono} {c.valor}
             </option>
-            ))}
+        ))}
         </select>
-        <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
+        <input
+        className="formulario__campo"
+        type="date"
+        value={fecha}
+        onChange={(e) => setFecha(e.target.value)}
+        required
+        />
 
-        <div style={{ marginTop: 12 }}>
-            <button type="submit">{ingresoEditando ? 'Guardar cambios' : 'Agregar'}</button>
-            {ingresoEditando && (
+        <div className="formulario__acciones">
+        <button type="submit" className="boton">
+            {ingresoEditando ? 'Guardar cambios' : 'Agregar'}
+        </button>
+        {ingresoEditando && (
             <button
-                type="button"
-                onClick={() => {
+            type="button"
+            className="boton boton--secundario"
+            onClick={() => {
                 limpiar();
                 onCancelar();
-                }}
+            }}
             >
-                Cancelar
+            Cancelar
             </button>
-            )}
+        )}
         </div>
-        </form>
+    </form>
     );
 }
