@@ -1,5 +1,6 @@
 import { API_URL } from '../constants';
-import type { Gasto, Resumen, ItemGasto } from '../types';
+import type { Gasto, Resumen, ItemGasto, HistorialProducto } from '../types';
+
 
 export async function obtenerGastos(mes: string): Promise<Gasto[]> {
     const res = await fetch(`${API_URL}/gastos?mes=${mes}`);
@@ -60,4 +61,10 @@ export async function actualizarCompraGrande(id: number, data: DatosCompraGrande
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
     });
+}
+
+export async function buscarHistorialProducto(nombre: string): Promise<HistorialProducto[]> {
+  const res = await fetch(`${API_URL}/productos/historial?nombre=${encodeURIComponent(nombre)}`);
+  if (!res.ok) throw new Error('Error al buscar el producto');
+  return res.json();
 }

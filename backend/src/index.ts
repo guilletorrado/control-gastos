@@ -21,23 +21,34 @@ app.get('/', (req, res) => {
   res.json({ message: 'Servidor funcionando correctamente' });
 });
 
-
-// Crear un gasto nuevo
-app.post('/gastos', async (req, res) => {
+// Historial de precios de un producto (busca por nombre, sin distinguir mayúsculas)
+app.get('/productos/historial', async (req, res) => {
   try {
-    const { descripcion, monto, categoria, fecha } = req.body;
-    const gasto = await prisma.gasto.create({
-      data: {
-        descripcion,
-        monto,
-        categoria,
-        ...(fecha ? { fecha: new Date(fecha) } : {}),
-      },
+    const { nombre } = req.query;
+
+    if (typeof nombre !== 'string' || nombre.trim() === '') {
+      return res.status(400).json({ error: 'Debe indicar el nombre del producto' });
+    }
+
+    const items = await prisma.itemGasto.findMany({
+      where: { producto: { contains: nombre.trim(), mode: 'insensitive' } },
+      include: { gasto: { select: { fecha: true, lugar: true } } },
+      orderBy: { gasto: { fecha: 'desc' } },
     });
-    res.status(201).json(gasto);
+
+    res.json(
+      items.map((i) => ({
+        id: i.id,
+        producto: i.producto,
+        cantidad: i.cantidad,
+        precioUnitario: i.precioUnitario,
+        fecha: i.gasto.fecha,
+        lugar: i.gasto.lugar,
+      }))
+    );
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Error al crear el gasto' });
+    res.status(500).json({ error: 'Error al buscar el historial del producto' });
   }
 });
 
@@ -67,7 +78,8 @@ app.get('/gastos', async (req, res) => {
 });
 
 // Resumen de gastos: total general y por categoría
-app.get('/gastos/resumen', async (req, res) => {
+// Resumen combinado del mes: ingresos, gastos y balance
+app.get('/resumen', async (req, res) => {
   try {
     const { mes } = req.query;
     let where = {};
@@ -79,7 +91,12 @@ app.get('/gastos/resumen', async (req, res) => {
       where = { fecha: { gte: inicio, lt: fin } };
     }
 
-    const totalGeneral = await prisma.gasto.aggregate({
+    const totalGastosResult = await prisma.gasto.aggregate({
+      where,
+      _sum: { monto: true },
+    });
+
+    const totalIngresosResult = await prisma.ingreso.aggregate({
       where,
       _sum: { monto: true },
     });
@@ -91,8 +108,13 @@ app.get('/gastos/resumen', async (req, res) => {
       orderBy: { _sum: { monto: 'desc' } },
     });
 
+    const totalGastos = totalGastosResult._sum.monto ?? 0;
+    const totalIngresos = totalIngresosResult._sum.monto ?? 0;
+
     res.json({
-      total: totalGeneral._sum.monto ?? 0,
+      totalGastos,
+      totalIngresos,
+      balance: totalIngresos - totalGastos,
       porCategoria: porCategoria.map((c) => ({
         categoria: c.categoria,
         total: c._sum.monto ?? 0,
@@ -101,6 +123,25 @@ app.get('/gastos/resumen', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error al obtener el resumen' });
+  }
+});
+
+// Crear un gasto nuevo
+app.post('/gastos', async (req, res) => {
+  try {
+    const { descripcion, monto, categoria, fecha } = req.body;
+    const gasto = await prisma.gasto.create({
+      data: {
+        descripcion,
+        monto,
+        categoria,
+        ...(fecha ? { fecha: new Date(fecha) } : {}),
+      },
+    });
+    res.status(201).json(gasto);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al crear el gasto' });
   }
 });
 
@@ -159,20 +200,6 @@ app.put('/gastos/:id', async (req, res) => {
   }
 });
 
-// Eliminar un gasto
-app.delete('/gastos/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    await prisma.gasto.delete({
-      where: { id: Number(id) },
-    });
-    res.status(204).send();
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al eliminar el gasto' });
-  }
-});
-
 // Crear una compra grande con múltiples items
 app.post('/gastos/compra-grande', async (req, res) => {
   try {
@@ -213,6 +240,97 @@ app.post('/gastos/compra-grande', async (req, res) => {
     res.status(500).json({ error: 'Error al crear la compra grande' });
   }
 });
+
+// Eliminar un gasto
+app.delete('/gastos/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.gasto.delete({
+      where: { id: Number(id) },
+    });
+    res.status(204).send();
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al eliminar el gasto' });
+  }
+});
+
+// Crear un ingreso
+app.post('/ingresos', async (req, res) => {
+  try {
+    const { descripcion, monto, categoria, fecha } = req.body;
+    const ingreso = await prisma.ingreso.create({
+      data: {
+        descripcion,
+        monto,
+        categoria,
+        ...(fecha ? { fecha: parsearFechaLocal(fecha) } : {}),
+      },
+    });
+    res.status(201).json(ingreso);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al crear el ingreso' });
+  }
+});
+
+// Listar ingresos (opcionalmente filtrados por mes)
+app.get('/ingresos', async (req, res) => {
+  try {
+    const { mes } = req.query;
+    let where = {};
+
+    if (typeof mes === 'string' && /^\d{4}-\d{2}$/.test(mes)) {
+      const [year, month] = mes.split('-').map(Number);
+      const inicio = new Date(year, month - 1, 1);
+      const fin = new Date(year, month, 1);
+      where = { fecha: { gte: inicio, lt: fin } };
+    }
+
+    const ingresos = await prisma.ingreso.findMany({
+      where,
+      orderBy: { fecha: 'desc' },
+    });
+    res.json(ingresos);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al obtener los ingresos' });
+  }
+});
+
+// Editar un ingreso
+app.put('/ingresos/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { descripcion, monto, categoria, fecha } = req.body;
+    const ingreso = await prisma.ingreso.update({
+      where: { id: Number(id) },
+      data: {
+        descripcion,
+        monto,
+        categoria,
+        ...(fecha ? { fecha: parsearFechaLocal(fecha) } : {}),
+      },
+    });
+    res.json(ingreso);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al actualizar el ingreso' });
+  }
+});
+
+// Eliminar un ingreso
+app.delete('/ingresos/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.ingreso.delete({ where: { id: Number(id) } });
+    res.status(204).send();
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al eliminar el ingreso' });
+  }
+});
+
 
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);

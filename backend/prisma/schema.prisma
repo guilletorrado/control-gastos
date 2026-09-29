@@ -33,3 +33,12 @@ model ItemGasto {
   gastoId        Int
   gasto          Gasto  @relation(fields: [gastoId], references: [id], onDelete: Cascade)
 }
+
+model Ingreso {
+  id          Int      @id @default(autoincrement())
+  descripcion String
+  monto       Float
+  categoria   String
+  fecha       DateTime @default(now())
+  creadoEn    DateTime @default(now())
+}

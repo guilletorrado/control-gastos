@@ -15,6 +15,7 @@ import SelectorMes from './components/SelectorMes';
 import ResumenMensual from './components/ResumenMensual';
 import FormularioGasto from './components/FormularioGasto';
 import ListaGastos from './components/ListaGastos';
+import ComparadorPrecios from './components/ComparadorPrecios';
 
 function App() {
   const [gastos, setGastos] = useState<Gasto[]>([]);
@@ -84,6 +85,7 @@ useEffect(() => {
       />
 
       <ListaGastos gastos={gastos} onEditar={setGastoEditando} onEliminar={handleEliminar} />
+      <ComparadorPrecios />
     </div>
   );
 }

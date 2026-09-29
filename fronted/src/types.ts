@@ -19,3 +19,12 @@ export interface Resumen {
     total: number;
     porCategoria: { categoria: string; total: number }[];
 }
+
+export interface HistorialProducto {
+    id: number;
+    producto: string;
+    cantidad: number;
+    precioUnitario: number;
+    fecha: string;
+    lugar: string | null;
+}
