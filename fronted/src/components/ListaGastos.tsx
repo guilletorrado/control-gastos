@@ -1,31 +1,69 @@
 import { CATEGORIAS } from '../constants';
-import type { Gasto } from '../types';
+import type { Gasto, Ingreso } from '../types';
+
+type Movimiento =
+    | { tipo: 'gasto'; dato: Gasto }
+    | { tipo: 'ingreso'; dato: Ingreso };
 
 interface Props {
     gastos: Gasto[];
-    onEditar: (gasto: Gasto) => void;
-    onEliminar: (id: number) => void;
+    ingresos: Ingreso[];
+    onEditarGasto: (gasto: Gasto) => void;
+    onEliminarGasto: (id: number) => void;
+    onEditarIngreso: (ingreso: Ingreso) => void;
+    onEliminarIngreso: (id: number) => void;
 }
 
-export default function ListaGastos({ gastos, onEditar, onEliminar }: Props) {
+export default function ListaGastos({
+    gastos,
+    ingresos,
+    onEditarGasto,
+    onEliminarGasto,
+    onEditarIngreso,
+    onEliminarIngreso,
+}: Props) {
+    const movimientos: Movimiento[] = [
+        ...gastos.map((g): Movimiento => ({ tipo: 'gasto', dato: g })),
+        ...ingresos.map((i): Movimiento => ({ tipo: 'ingreso', dato: i })),
+    ].sort((a, b) => new Date(b.dato.fecha).getTime() - new Date(a.dato.fecha).getTime());
+
     return (
         <ul style={{ listStyle: 'none', padding: 0 }}>
-        {gastos.map((g) => (
-            <li key={g.id} style={{ borderBottom: '1px solid #ccc', padding: '8px 0' }}>
+        {movimientos.map((m) => (
+            <li
+            key={`${m.tipo}-${m.dato.id}`}
+            style={{ borderBottom: '1px solid #ccc', padding: '8px 0' }}
+            >
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>
-                {CATEGORIAS.find((c) => c.valor === g.categoria)?.icono ?? '📦'} {g.descripcion} — $
-                {g.monto} ({g.categoria})
-                {g.lugar && <span style={{ color: '#888' }}> · {g.lugar}</span>}
+                <span style={{ color: m.tipo === 'ingreso' ? '#155724' : '#721c24' }}>
+                {m.tipo === 'ingreso'
+                    ? `+ ${m.dato.descripcion} — $${m.dato.monto} (${m.dato.categoria})`
+                    : `− ${CATEGORIAS.find((c) => c.valor === m.dato.categoria)?.icono ?? '📦'} ${
+                        m.dato.descripcion
+                    } — $${m.dato.monto} (${m.dato.categoria})${
+                        (m.dato as Gasto).lugar ? ` · ${(m.dato as Gasto).lugar}` : ''
+                    }`}
                 </span>
                 <span>
-                <button onClick={() => onEditar(g)}>Editar</button>{' '}
-                <button onClick={() => onEliminar(g.id)}>Eliminar</button>
+                <button
+                    onClick={() =>
+                    m.tipo === 'gasto' ? onEditarGasto(m.dato) : onEditarIngreso(m.dato)
+                    }
+                >
+                    Editar
+                </button>{' '}
+                <button
+                    onClick={() =>
+                    m.tipo === 'gasto' ? onEliminarGasto(m.dato.id) : onEliminarIngreso(m.dato.id)
+                    }
+                >
+                    Eliminar
+                </button>
                 </span>
             </div>
-            {g.items && g.items.length > 0 && (
+            {m.tipo === 'gasto' && (m.dato as Gasto).items && (m.dato as Gasto).items!.length > 0 && (
                 <ul style={{ listStyle: 'none', paddingLeft: 16, marginTop: 4, color: '#666', fontSize: 14 }}>
-                {g.items.map((item) => (
+                {(m.dato as Gasto).items!.map((item) => (
                     <li key={item.id}>
                     {item.producto}: {item.cantidad} x ${item.precioUnitario}
                     </li>

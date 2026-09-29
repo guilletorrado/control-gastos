@@ -9,29 +9,40 @@ import {
   eliminarGasto,
   crearCompraGrande,
   actualizarCompraGrande,
+  obtenerIngresos,
+  crearIngreso,
+  actualizarIngreso,
+  eliminarIngreso,
 } from './services/gastosApi';
-import type { Gasto, Resumen } from './types';
+import type { Gasto, Ingreso, Resumen } from './types';
 import SelectorMes from './components/SelectorMes';
 import ResumenMensual from './components/ResumenMensual';
+import SelectorTipoMovimiento from './components/SelectorTipoMovimiento';
 import FormularioGasto from './components/FormularioGasto';
+import FormularioIngreso from './components/FormularioIngreso';
 import ListaGastos from './components/ListaGastos';
 import ComparadorPrecios from './components/ComparadorPrecios';
 
 function App() {
   const [gastos, setGastos] = useState<Gasto[]>([]);
+  const [ingresos, setIngresos] = useState<Ingreso[]>([]);
   const [resumen, setResumen] = useState<Resumen | null>(null);
   const [mesSeleccionado, setMesSeleccionado] = useState(mesActual);
+  const [tipoMovimiento, setTipoMovimiento] = useState<'egreso' | 'ingreso'>('egreso');
+
   const [gastoEditando, setGastoEditando] = useState<Gasto | null>(null);
+  const [ingresoEditando, setIngresoEditando] = useState<Ingreso | null>(null);
 
   const recargarDatos = useCallback(async () => {
-  setGastos(await obtenerGastos(mesSeleccionado));
-  setResumen(await obtenerResumen(mesSeleccionado));
-}, [mesSeleccionado]);
+    setGastos(await obtenerGastos(mesSeleccionado));
+    setIngresos(await obtenerIngresos(mesSeleccionado));
+    setResumen(await obtenerResumen(mesSeleccionado));
+  }, [mesSeleccionado]);
 
-useEffect(() => {
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  void recargarDatos();
-}, [recargarDatos]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void recargarDatos();
+  }, [recargarDatos]);
 
   const handleGuardarSimple = async (datos: {
     descripcion: string;
@@ -64,10 +75,43 @@ useEffect(() => {
     recargarDatos();
   };
 
-  const handleEliminar = async (id: number) => {
+  const handleGuardarIngreso = async (datos: {
+    descripcion: string;
+    monto: number;
+    categoria: string;
+    fecha: string;
+  }) => {
+    if (ingresoEditando) {
+      await actualizarIngreso(ingresoEditando.id, datos);
+    } else {
+      await crearIngreso(datos);
+    }
+    setIngresoEditando(null);
+    recargarDatos();
+  };
+
+  const handleEliminarGasto = async (id: number) => {
     await eliminarGasto(id);
     if (gastoEditando?.id === id) setGastoEditando(null);
     recargarDatos();
+  };
+
+  const handleEliminarIngreso = async (id: number) => {
+    await eliminarIngreso(id);
+    if (ingresoEditando?.id === id) setIngresoEditando(null);
+    recargarDatos();
+  };
+
+  const handleEditarGasto = (gasto: Gasto) => {
+    setIngresoEditando(null);
+    setTipoMovimiento('egreso');
+    setGastoEditando(gasto);
+  };
+
+  const handleEditarIngreso = (ingreso: Ingreso) => {
+    setGastoEditando(null);
+    setTipoMovimiento('ingreso');
+    setIngresoEditando(ingreso);
   };
 
   return (
@@ -77,14 +121,32 @@ useEffect(() => {
       <SelectorMes mes={mesSeleccionado} onCambiarMes={setMesSeleccionado} />
       <ResumenMensual resumen={resumen} />
 
-      <FormularioGasto
-        gastoEditando={gastoEditando}
-        onGuardarSimple={handleGuardarSimple}
-        onGuardarCompraGrande={handleGuardarCompraGrande}
-        onCancelar={() => setGastoEditando(null)}
+      <SelectorTipoMovimiento tipo={tipoMovimiento} onCambiar={setTipoMovimiento} />
+
+      {tipoMovimiento === 'egreso' ? (
+        <FormularioGasto
+          gastoEditando={gastoEditando}
+          onGuardarSimple={handleGuardarSimple}
+          onGuardarCompraGrande={handleGuardarCompraGrande}
+          onCancelar={() => setGastoEditando(null)}
+        />
+      ) : (
+        <FormularioIngreso
+          ingresoEditando={ingresoEditando}
+          onGuardar={handleGuardarIngreso}
+          onCancelar={() => setIngresoEditando(null)}
+        />
+      )}
+
+      <ListaGastos
+        gastos={gastos}
+        ingresos={ingresos}
+        onEditarGasto={handleEditarGasto}
+        onEliminarGasto={handleEliminarGasto}
+        onEditarIngreso={handleEditarIngreso}
+        onEliminarIngreso={handleEliminarIngreso}
       />
 
-      <ListaGastos gastos={gastos} onEditar={setGastoEditando} onEliminar={handleEliminar} />
       <ComparadorPrecios />
     </div>
   );

@@ -15,8 +15,18 @@ export interface Gasto {
     items?: ItemGasto[];
 }
 
+export interface Ingreso {
+    id: number;
+    descripcion: string;
+    monto: number;
+    categoria: string;
+    fecha: string;
+}
+
 export interface Resumen {
-    total: number;
+    totalGastos: number;
+    totalIngresos: number;
+    balance: number;
     porCategoria: { categoria: string; total: number }[];
 }
 

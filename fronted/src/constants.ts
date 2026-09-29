@@ -14,3 +14,12 @@ export const CATEGORIAS = [
     { valor: 'Mascotas', icono: '🐶' },
     { valor: 'Otros', icono: '📦' },
 ];
+
+export const CATEGORIAS_INGRESO = [
+    { valor: 'Sueldo', icono: '💼' },
+    { valor: 'Trabajo particular', icono: '🧑‍🔧' },
+    { valor: 'Regalo', icono: '🎁' },
+    { valor: 'Venta', icono: '💰' },
+    { valor: 'Inversión', icono: '📈' },
+    { valor: 'Otro', icono: '📦' },
+];
