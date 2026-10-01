@@ -22,7 +22,7 @@ export default function ListaGastos({
     onEliminarGasto,
     onEditarIngreso,
     onEliminarIngreso,
-}: Props) {
+    }: Props) {
     const [expandidos, setExpandidos] = useState<Set<string>>(new Set());
 
     const toggleExpandido = (clave: string) => {
@@ -47,9 +47,14 @@ export default function ListaGastos({
         {movimientos.map((m) => (
             <li key={`${m.tipo}-${m.dato.id}`} className="movimiento">
             <div className="movimiento__linea">
-                <span className={`movimiento__desc ${m.tipo}`}>
-                {m.tipo === 'gasto' &&
-                    `${CATEGORIAS.find((c) => c.valor === m.dato.categoria)?.icono ?? '📦'} `}
+                <span className="movimiento__desc">
+                {m.tipo === 'gasto' ? (
+                    <span className="chip-icono gasto">
+                    {CATEGORIAS.find((c) => c.valor === m.dato.categoria)?.icono ?? '📦'}
+                    </span>
+                ) : (
+                    <span className="chip-icono ingreso">💰</span>
+                )}
                 {m.dato.descripcion}
                 {m.tipo === 'gasto' && (m.dato as Gasto).lugar ? ` · ${(m.dato as Gasto).lugar}` : ''}
                 </span>
@@ -65,7 +70,7 @@ export default function ListaGastos({
                 onClick={() => (m.tipo === 'gasto' ? onEditarGasto(m.dato) : onEditarIngreso(m.dato))}
                 >
                 editar
-                </button>{' '}
+                </button>
                 <button
                 type="button"
                 className="boton--texto"

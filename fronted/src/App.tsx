@@ -22,6 +22,29 @@ import FormularioGasto from './components/FormularioGasto';
 import FormularioIngreso from './components/FormularioIngreso';
 import ListaGastos from './components/ListaGastos';
 import ComparadorPrecios from './components/ComparadorPrecios';
+import Modal from './components/Modal';
+
+interface DatosGastoSimple {
+  descripcion: string;
+  monto: number;
+  categoria: string;
+  fecha: string;
+}
+
+interface DatosCompraGrande {
+  descripcion: string;
+  categoria: string;
+  fecha: string;
+  lugar: string;
+  items: { producto: string; cantidad: number; precioUnitario: number }[];
+}
+
+interface DatosIngreso {
+  descripcion: string;
+  monto: number;
+  categoria: string;
+  fecha: string;
+}
 
 function App() {
   const [gastos, setGastos] = useState<Gasto[]>([]);
@@ -44,52 +67,42 @@ function App() {
     void recargarDatos();
   }, [recargarDatos]);
 
-  const handleGuardarSimple = async (datos: {
-    descripcion: string;
-    monto: number;
-    categoria: string;
-    fecha: string;
-  }) => {
-    if (gastoEditando) {
-      await actualizarGasto(gastoEditando.id, datos);
-    } else {
-      await crearGasto(datos);
-    }
+  // --- Crear (siempre desde el formulario de la izquierda) ---
+  const handleCrearGasto = async (datos: DatosGastoSimple) => {
+    await crearGasto(datos);
+    recargarDatos();
+  };
+
+  const handleCrearCompraGrande = async (datos: DatosCompraGrande) => {
+    await crearCompraGrande(datos);
+    recargarDatos();
+  };
+
+  const handleCrearIngreso = async (datos: DatosIngreso) => {
+    await crearIngreso(datos);
+    recargarDatos();
+  };
+
+  // --- Actualizar (siempre desde el modal de edición) ---
+  const handleActualizarGasto = async (id: number, datos: DatosGastoSimple) => {
+    await actualizarGasto(id, datos);
     setGastoEditando(null);
     recargarDatos();
   };
 
-  const handleGuardarCompraGrande = async (datos: {
-    descripcion: string;
-    categoria: string;
-    fecha: string;
-    lugar: string;
-    items: { producto: string; cantidad: number; precioUnitario: number }[];
-  }) => {
-    if (gastoEditando) {
-      await actualizarCompraGrande(gastoEditando.id, datos);
-    } else {
-      await crearCompraGrande(datos);
-    }
+  const handleActualizarCompraGrande = async (id: number, datos: DatosCompraGrande) => {
+    await actualizarCompraGrande(id, datos);
     setGastoEditando(null);
     recargarDatos();
   };
 
-  const handleGuardarIngreso = async (datos: {
-    descripcion: string;
-    monto: number;
-    categoria: string;
-    fecha: string;
-  }) => {
-    if (ingresoEditando) {
-      await actualizarIngreso(ingresoEditando.id, datos);
-    } else {
-      await crearIngreso(datos);
-    }
+  const handleActualizarIngreso = async (id: number, datos: DatosIngreso) => {
+    await actualizarIngreso(id, datos);
     setIngresoEditando(null);
     recargarDatos();
   };
 
+  // --- Eliminar ---
   const handleEliminarGasto = async (id: number) => {
     await eliminarGasto(id);
     if (gastoEditando?.id === id) setGastoEditando(null);
@@ -102,15 +115,14 @@ function App() {
     recargarDatos();
   };
 
+  // --- Abrir edición ---
   const handleEditarGasto = (gasto: Gasto) => {
     setIngresoEditando(null);
-    setTipoMovimiento('egreso');
     setGastoEditando(gasto);
   };
 
   const handleEditarIngreso = (ingreso: Ingreso) => {
     setGastoEditando(null);
-    setTipoMovimiento('ingreso');
     setIngresoEditando(ingreso);
   };
 
@@ -128,16 +140,16 @@ function App() {
 
             {tipoMovimiento === 'egreso' ? (
               <FormularioGasto
-                gastoEditando={gastoEditando}
-                onGuardarSimple={handleGuardarSimple}
-                onGuardarCompraGrande={handleGuardarCompraGrande}
-                onCancelar={() => setGastoEditando(null)}
+                gastoEditando={null}
+                onGuardarSimple={handleCrearGasto}
+                onGuardarCompraGrande={handleCrearCompraGrande}
+                onCancelar={() => {}}
               />
             ) : (
               <FormularioIngreso
-                ingresoEditando={ingresoEditando}
-                onGuardar={handleGuardarIngreso}
-                onCancelar={() => setIngresoEditando(null)}
+                ingresoEditando={null}
+                onGuardar={handleCrearIngreso}
+                onCancelar={() => {}}
               />
             )}
           </div>
@@ -164,6 +176,41 @@ function App() {
       <div className="panel">
         <ComparadorPrecios />
       </div>
+
+      {gastoEditando && (
+        <Modal titulo="Editar gasto" onCerrar={() => setGastoEditando(null)}>
+          <FormularioGasto
+            gastoEditando={gastoEditando}
+            onGuardarSimple={(datos) => handleActualizarGasto(gastoEditando.id, datos)}
+            onGuardarCompraGrande={(datos) => handleActualizarCompraGrande(gastoEditando.id, datos)}
+            onCancelar={() => setGastoEditando(null)}
+          />
+          <button
+            type="button"
+            className="boton modal__eliminar"
+            onClick={() => handleEliminarGasto(gastoEditando.id)}
+          >
+            Eliminar gasto
+          </button>
+        </Modal>
+      )}
+
+      {ingresoEditando && (
+        <Modal titulo="Editar ingreso" onCerrar={() => setIngresoEditando(null)}>
+          <FormularioIngreso
+            ingresoEditando={ingresoEditando}
+            onGuardar={(datos) => handleActualizarIngreso(ingresoEditando.id, datos)}
+            onCancelar={() => setIngresoEditando(null)}
+          />
+          <button
+            type="button"
+            className="boton modal__eliminar"
+            onClick={() => handleEliminarIngreso(ingresoEditando.id)}
+          >
+            Eliminar ingreso
+          </button>
+        </Modal>
+      )}
     </div>
   );
 }

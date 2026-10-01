@@ -214,7 +214,7 @@ export default function FormularioGasto({
 
             <div className="items-builder">
             <p className="items-builder__titulo">
-                {editandoItemIndex !== null ? 'editando producto' : 'agregar productos'}
+                {editandoItemIndex !== null ? 'editando producto' : 'Agregar productos'}
             </p>
             <div className="items-builder__campos">
                 <input
