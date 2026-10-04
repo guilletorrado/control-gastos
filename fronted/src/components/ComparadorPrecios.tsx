@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { buscarHistorialProducto } from '../services/gastosApi';
+import { formatearMonto } from '../utils/formato';
 import type { HistorialProducto } from '../types';
 
 interface ResumenLugar {
@@ -69,7 +70,15 @@ return (
             className="formulario__campo"
             placeholder="Producto (ej: leche)"
             value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
+            onChange={(e) => {
+                const valor = e.target.value;
+                setNombre(valor);
+                if (valor.trim() === '') {
+                setRegistros([]);
+                setBuscado(false);
+                setError('');
+                }
+            }}
         />
         <button type="submit" className="boton" disabled={cargando}>
             {cargando ? 'Buscando...' : 'Buscar'}
@@ -104,9 +113,9 @@ return (
                     {i === 0 && resumenPorLugar.length > 1 ? '⭐ ' : ''}
                     {r.lugar}
                     </td>
-                    <td>${r.ultimoPrecio}</td>
-                    <td>${r.minimo}</td>
-                    <td>${r.promedio.toFixed(2)}</td>
+                    <td>${formatearMonto(r.ultimoPrecio)}</td>
+                    <td>${formatearMonto(r.minimo)}</td>
+                    <td>${formatearMonto(r.promedio)}</td>
                     <td>{r.unidades}</td>
                 </tr>
                 ))}
@@ -117,7 +126,7 @@ return (
             {registros.map((r) => (
                 <li key={r.id}>
                 {new Date(r.fecha).toLocaleDateString('es-AR')} · {r.lugar ?? 'Sin lugar'} ·{' '}
-                {r.producto}: {r.cantidad} x ${r.precioUnitario}
+                {r.producto}: {r.cantidad} x ${formatearMonto(r.precioUnitario)}
                 </li>
             ))}
             </ul>

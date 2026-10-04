@@ -46,6 +46,12 @@ interface DatosIngreso {
   fecha: string;
 }
 
+interface Confirmacion {
+  tipo: 'gasto' | 'ingreso';
+  id: number;
+  descripcion: string;
+}
+
 function App() {
   const [gastos, setGastos] = useState<Gasto[]>([]);
   const [ingresos, setIngresos] = useState<Ingreso[]>([]);
@@ -55,6 +61,7 @@ function App() {
 
   const [gastoEditando, setGastoEditando] = useState<Gasto | null>(null);
   const [ingresoEditando, setIngresoEditando] = useState<Ingreso | null>(null);
+  const [confirmacion, setConfirmacion] = useState<Confirmacion | null>(null);
 
   const recargarDatos = useCallback(async () => {
     setGastos(await obtenerGastos(mesSeleccionado));
@@ -67,7 +74,7 @@ function App() {
     void recargarDatos();
   }, [recargarDatos]);
 
-  // --- Crear (siempre desde el formulario de la izquierda) ---
+  // --- Crear ---
   const handleCrearGasto = async (datos: DatosGastoSimple) => {
     await crearGasto(datos);
     recargarDatos();
@@ -83,7 +90,7 @@ function App() {
     recargarDatos();
   };
 
-  // --- Actualizar (siempre desde el modal de edición) ---
+  // --- Actualizar ---
   const handleActualizarGasto = async (id: number, datos: DatosGastoSimple) => {
     await actualizarGasto(id, datos);
     setGastoEditando(null);
@@ -102,16 +109,30 @@ function App() {
     recargarDatos();
   };
 
-  // --- Eliminar ---
-  const handleEliminarGasto = async (id: number) => {
-    await eliminarGasto(id);
-    if (gastoEditando?.id === id) setGastoEditando(null);
-    recargarDatos();
+  // --- Pedir confirmación antes de eliminar ---
+  const pedirConfirmacionGasto = (gasto: Gasto) => {
+    setGastoEditando(null);
+    setConfirmacion({ tipo: 'gasto', id: gasto.id, descripcion: gasto.descripcion });
   };
 
-  const handleEliminarIngreso = async (id: number) => {
-    await eliminarIngreso(id);
-    if (ingresoEditando?.id === id) setIngresoEditando(null);
+  const pedirConfirmacionIngreso = (ingreso: Ingreso) => {
+    setIngresoEditando(null);
+    setConfirmacion({ tipo: 'ingreso', id: ingreso.id, descripcion: ingreso.descripcion });
+  };
+
+  // --- Eliminar de verdad (al confirmar) ---
+  const confirmarEliminacion = async () => {
+    if (!confirmacion) return;
+
+    if (confirmacion.tipo === 'gasto') {
+      await eliminarGasto(confirmacion.id);
+      if (gastoEditando?.id === confirmacion.id) setGastoEditando(null);
+    } else {
+      await eliminarIngreso(confirmacion.id);
+      if (ingresoEditando?.id === confirmacion.id) setIngresoEditando(null);
+    }
+
+    setConfirmacion(null);
     recargarDatos();
   };
 
@@ -167,9 +188,9 @@ function App() {
           gastos={gastos}
           ingresos={ingresos}
           onEditarGasto={handleEditarGasto}
-          onEliminarGasto={handleEliminarGasto}
+          onEliminarGasto={pedirConfirmacionGasto}
           onEditarIngreso={handleEditarIngreso}
-          onEliminarIngreso={handleEliminarIngreso}
+          onEliminarIngreso={pedirConfirmacionIngreso}
         />
       </div>
 
@@ -188,7 +209,7 @@ function App() {
           <button
             type="button"
             className="boton modal__eliminar"
-            onClick={() => handleEliminarGasto(gastoEditando.id)}
+            onClick={() => pedirConfirmacionGasto(gastoEditando)}
           >
             Eliminar gasto
           </button>
@@ -205,10 +226,31 @@ function App() {
           <button
             type="button"
             className="boton modal__eliminar"
-            onClick={() => handleEliminarIngreso(ingresoEditando.id)}
+            onClick={() => pedirConfirmacionIngreso(ingresoEditando)}
           >
             Eliminar ingreso
           </button>
+        </Modal>
+      )}
+
+      {confirmacion && (
+        <Modal titulo="Confirmar eliminación" onCerrar={() => setConfirmacion(null)}>
+          <p>
+            ¿Seguro que querés eliminar <strong>"{confirmacion.descripcion}"</strong>? Esta acción
+            no se puede deshacer.
+          </p>
+          <div className="formulario__acciones">
+            <button
+              type="button"
+              className="boton boton--secundario"
+              onClick={() => setConfirmacion(null)}
+            >
+              Cancelar
+            </button>
+            <button type="button" className="boton modal__eliminar" onClick={confirmarEliminacion}>
+              Sí, eliminar
+            </button>
+          </div>
         </Modal>
       )}
     </div>

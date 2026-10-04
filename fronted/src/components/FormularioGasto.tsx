@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { CATEGORIAS } from '../constants';
 import { fechaDeHoy } from '../utils/fechas';
+import { formatearMonto } from '../utils/formato';
 import type { Gasto, ItemGasto } from '../types';
 
 interface DatosGastoSimple {
@@ -257,10 +258,10 @@ export default function FormularioGasto({
                     className={`items-lista__item ${editandoItemIndex === i ? 'editando' : ''}`}
                     >
                     <span>
-                        {item.producto} — {item.cantidad} x ${item.precioUnitario}
+                    {item.producto} — {item.cantidad} x ${formatearMonto(item.precioUnitario)}
                     </span>
                     <span className="items-lista__monto">
-                        ${item.cantidad * item.precioUnitario}{' '}
+                    ${formatearMonto(item.cantidad * item.precioUnitario)}{' '}
                         <button type="button" className="boton--texto" onClick={() => editarItem(i)}>
                         editar
                         </button>{' '}
@@ -273,7 +274,7 @@ export default function FormularioGasto({
                 </ul>
             )}
 
-            {items.length > 0 && <p className="items-builder__total">Total: ${totalItems}</p>}
+            {items.length > 0 && <p className="items-builder__total">Total: ${formatearMonto(totalItems)}</p>}
             </div>
         </>
         ) : (

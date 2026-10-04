@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CATEGORIAS } from '../constants';
+import { formatearMonto } from '../utils/formato';
 import type { Gasto, Ingreso } from '../types';
 
 type Movimiento =
@@ -10,9 +11,9 @@ interface Props {
     gastos: Gasto[];
     ingresos: Ingreso[];
     onEditarGasto: (gasto: Gasto) => void;
-    onEliminarGasto: (id: number) => void;
+    onEliminarGasto: (gasto: Gasto) => void;
     onEditarIngreso: (ingreso: Ingreso) => void;
-    onEliminarIngreso: (id: number) => void;
+    onEliminarIngreso: (ingreso: Ingreso) => void;
 }
 
 export default function ListaGastos({
@@ -59,7 +60,7 @@ export default function ListaGastos({
                 {m.tipo === 'gasto' && (m.dato as Gasto).lugar ? ` · ${(m.dato as Gasto).lugar}` : ''}
                 </span>
                 <span className={`movimiento__monto ${m.tipo}`}>
-                {m.tipo === 'ingreso' ? '+' : '−'} ${m.dato.monto}
+                {m.tipo === 'ingreso' ? '+' : '−'} ${formatearMonto(m.dato.monto)}
                 </span>
             </div>
 
@@ -75,7 +76,7 @@ export default function ListaGastos({
                 type="button"
                 className="boton--texto"
                 onClick={() =>
-                    m.tipo === 'gasto' ? onEliminarGasto(m.dato.id) : onEliminarIngreso(m.dato.id)
+                    m.tipo === 'gasto' ? onEliminarGasto(m.dato) : onEliminarIngreso(m.dato)
                 }
                 >
                 eliminar
@@ -97,7 +98,7 @@ export default function ListaGastos({
                     <ul className="movimiento__items">
                     {(m.dato as Gasto).items!.map((item) => (
                         <li key={item.id}>
-                        {item.producto}: {item.cantidad} x ${item.precioUnitario}
+                        {item.producto}: {item.cantidad} x ${formatearMonto(item.precioUnitario)}
                         </li>
                     ))}
                     </ul>
