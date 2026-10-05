@@ -1,11 +1,38 @@
 import { API_URL } from '../constants';
 import type { Gasto, Resumen, ItemGasto, HistorialProducto, Ingreso } from '../types';
+import { obtenerToken, cerrarSesion } from './authApi';
 
-interface DatosIngreso {
-    descripcion: string;
-    monto: number;
-    categoria: string;
-    fecha: string;
+function headersAutenticados(): HeadersInit {
+    const token = obtenerToken();
+    return {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+    }
+
+    async function fetchAutenticado(url: string, options: RequestInit = {}) {
+    const res = await fetch(url, {
+        ...options,
+        headers: { ...headersAutenticados(), ...(options.headers ?? {}) },
+    });
+
+    if (res.status === 401) {
+        cerrarSesion();
+        window.location.reload();
+        throw new Error('Sesión vencida');
+    }
+
+    return res;
+}
+
+export async function obtenerGastos(mes: string): Promise<Gasto[]> {
+    const res = await fetchAutenticado(`${API_URL}/gastos?mes=${mes}`);
+    return res.json();
+}
+
+export async function obtenerResumen(mes: string): Promise<Resumen> {
+    const res = await fetchAutenticado(`${API_URL}/resumen?mes=${mes}`);
+    return res.json();
 }
 
 interface DatosGastoSimple {
@@ -13,6 +40,24 @@ interface DatosGastoSimple {
     monto: number;
     categoria: string;
     fecha: string;
+}
+
+export async function crearGasto(data: DatosGastoSimple) {
+    await fetchAutenticado(`${API_URL}/gastos`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+    });
+    }
+
+export async function actualizarGasto(id: number, data: DatosGastoSimple) {
+    await fetchAutenticado(`${API_URL}/gastos/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+    });
+}
+
+export async function eliminarGasto(id: number) {
+    await fetchAutenticado(`${API_URL}/gastos/${id}`, { method: 'DELETE' });
 }
 
 interface DatosCompraGrande {
@@ -23,80 +68,52 @@ interface DatosCompraGrande {
     items: ItemGasto[];
 }
 
-
-export async function obtenerGastos(mes: string): Promise<Gasto[]> {
-    const res = await fetch(`${API_URL}/gastos?mes=${mes}`);
-    return res.json();
-}
-
-export async function obtenerResumen(mes: string): Promise<Resumen> {
-    const res = await fetch(`${API_URL}/resumen?mes=${mes}`);
-    return res.json();
-}
-
-export async function crearGasto(data: DatosGastoSimple) {
-    await fetch(`${API_URL}/gastos`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-    });
-}
-
-export async function actualizarGasto(id: number, data: DatosGastoSimple) {
-    await fetch(`${API_URL}/gastos/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-    });
-}
-
-export async function eliminarGasto(id: number) {
-    await fetch(`${API_URL}/gastos/${id}`, { method: 'DELETE' });
-}
-
 export async function crearCompraGrande(data: DatosCompraGrande) {
-    await fetch(`${API_URL}/gastos/compra-grande`, {
+    await fetchAutenticado(`${API_URL}/gastos/compra-grande`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
     });
 }
 
 export async function actualizarCompraGrande(id: number, data: DatosCompraGrande) {
-    await fetch(`${API_URL}/gastos/${id}`, {
+    await fetchAutenticado(`${API_URL}/gastos/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
     });
 }
 
-export async function buscarHistorialProducto(nombre: string): Promise<HistorialProducto[]> {
-    const res = await fetch(`${API_URL}/productos/historial?nombre=${encodeURIComponent(nombre)}`);
-    if (!res.ok) throw new Error('Error al buscar el producto');
-    return res.json();
+interface DatosIngreso {
+    descripcion: string;
+    monto: number;
+    categoria: string;
+    fecha: string;
 }
 
 export async function obtenerIngresos(mes: string): Promise<Ingreso[]> {
-    const res = await fetch(`${API_URL}/ingresos?mes=${mes}`);
+    const res = await fetchAutenticado(`${API_URL}/ingresos?mes=${mes}`);
     return res.json();
 }
 
 export async function crearIngreso(data: DatosIngreso) {
-    await fetch(`${API_URL}/ingresos`, {
+    await fetchAutenticado(`${API_URL}/ingresos`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
     });
 }
 
 export async function actualizarIngreso(id: number, data: DatosIngreso) {
-    await fetch(`${API_URL}/ingresos/${id}`, {
+    await fetchAutenticado(`${API_URL}/ingresos/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
     });
 }
 
 export async function eliminarIngreso(id: number) {
-    await fetch(`${API_URL}/ingresos/${id}`, { method: 'DELETE' });
+    await fetchAutenticado(`${API_URL}/ingresos/${id}`, { method: 'DELETE' });
+}
+
+export async function buscarHistorialProducto(nombre: string): Promise<HistorialProducto[]> {
+    const res = await fetchAutenticado(`${API_URL}/productos/historial?nombre=${encodeURIComponent(nombre)}`);
+    if (!res.ok) throw new Error('Error al buscar el producto');
+    return res.json();
 }

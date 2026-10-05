@@ -735,3 +735,65 @@ body {
 .resumen-anillo__monto.negativo {
   color: var(--rojo);
 }
+
+.login-pantalla {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.login-caja {
+  background-color: #ffffff;
+  border-radius: 24px;
+  padding: 32px 28px;
+  width: 100%;
+  max-width: 360px;
+  box-shadow: 0 10px 30px rgba(27, 37, 89, 0.08);
+  text-align: center;
+}
+
+.login-titulo {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin: 0 0 6px;
+}
+
+.login-subtitulo {
+  font-size: 0.85rem;
+  color: var(--tinta-suave);
+  margin: 0 0 20px;
+}
+
+.login-boton {
+  width: 100%;
+  margin-top: 6px;
+}
+
+.login-boton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.login-error {
+  color: var(--rojo);
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin: 4px 0 10px;
+}
+
+.login-cambiar {
+  margin-top: 16px;
+}
+
+.app__cerrar-sesion {
+  background: none;
+  border: none;
+  color: var(--tinta-suave);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+}

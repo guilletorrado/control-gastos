@@ -14,6 +14,7 @@ import {
   actualizarIngreso,
   eliminarIngreso,
 } from './services/gastosApi';
+import { obtenerToken, obtenerEmailGuardado, cerrarSesion } from './services/authApi';
 import type { Gasto, Ingreso, Resumen } from './types';
 import SelectorMes from './components/SelectorMes';
 import ResumenMensual from './components/ResumenMensual';
@@ -23,6 +24,7 @@ import FormularioIngreso from './components/FormularioIngreso';
 import ListaGastos from './components/ListaGastos';
 import ComparadorPrecios from './components/ComparadorPrecios';
 import Modal from './components/Modal';
+import LoginForm from './components/LoginForm';
 
 interface DatosGastoSimple {
   descripcion: string;
@@ -53,6 +55,8 @@ interface Confirmacion {
 }
 
 function App() {
+  const [logueado, setLogueado] = useState(() => !!obtenerToken());
+
   const [gastos, setGastos] = useState<Gasto[]>([]);
   const [ingresos, setIngresos] = useState<Ingreso[]>([]);
   const [resumen, setResumen] = useState<Resumen | null>(null);
@@ -70,9 +74,19 @@ function App() {
   }, [mesSeleccionado]);
 
   useEffect(() => {
+    if (!logueado) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void recargarDatos();
-  }, [recargarDatos]);
+  }, [recargarDatos, logueado]);
+
+  if (!logueado) {
+    return <LoginForm onIngresar={() => setLogueado(true)} />;
+  }
+
+  const handleCerrarSesion = () => {
+    cerrarSesion();
+    setLogueado(false);
+  };
 
   // --- Crear ---
   const handleCrearGasto = async (datos: DatosGastoSimple) => {
@@ -152,6 +166,14 @@ function App() {
       <div className="app__header">
         <h1 className="app__titulo">Control de Gastos</h1>
         <SelectorMes mes={mesSeleccionado} onCambiarMes={setMesSeleccionado} />
+        <div>
+          <span style={{ fontSize: '0.78rem', color: 'var(--tinta-suave)', marginRight: 10 }}>
+            {obtenerEmailGuardado()}
+          </span>
+          <button type="button" className="app__cerrar-sesion" onClick={handleCerrarSesion}>
+            Cerrar sesión
+          </button>
+        </div>
       </div>
 
       <div className="app__grid">
