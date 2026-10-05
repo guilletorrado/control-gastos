@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -12,6 +6,15 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  passwordHash String
+  creadoEn     DateTime  @default(now())
+  gastos       Gasto[]
+  ingresos     Ingreso[]
 }
 
 model Gasto {
@@ -23,6 +26,8 @@ model Gasto {
   creadoEn    DateTime    @default(now())
   lugar       String?
   items       ItemGasto[]
+  usuarioId   Int
+  usuario     Usuario     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 }
 
 model ItemGasto {
@@ -41,4 +46,6 @@ model Ingreso {
   categoria   String
   fecha       DateTime @default(now())
   creadoEn    DateTime @default(now())
+  usuarioId   Int
+  usuario     Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 }

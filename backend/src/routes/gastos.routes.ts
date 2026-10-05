@@ -1,13 +1,15 @@
 import { Router } from 'express';
 import { prisma } from '../prisma';
 import { parsearFechaLocal, construirRangoMes } from '../utils/fechas';
+import { verificarToken, RequestConUsuario } from '../middleware/auth';
 
 export const gastosRouter = Router();
 
-// Listar gastos (con items) filtrados por mes
-gastosRouter.get('/', async (req, res) => {
+gastosRouter.use(verificarToken);
+
+gastosRouter.get('/', async (req: RequestConUsuario, res) => {
     try {
-        const where = construirRangoMes(req.query.mes);
+        const where = { usuarioId: req.usuarioId, ...construirRangoMes(req.query.mes) };
         const gastos = await prisma.gasto.findMany({
         where,
         orderBy: { fecha: 'desc' },
@@ -20,8 +22,7 @@ gastosRouter.get('/', async (req, res) => {
     }
     });
 
-    // Crear un gasto simple
-    gastosRouter.post('/', async (req, res) => {
+    gastosRouter.post('/', async (req: RequestConUsuario, res) => {
     try {
         const { descripcion, monto, categoria, fecha } = req.body;
         const gasto = await prisma.gasto.create({
@@ -29,6 +30,7 @@ gastosRouter.get('/', async (req, res) => {
             descripcion,
             monto,
             categoria,
+            usuarioId: req.usuarioId as number,
             ...(fecha ? { fecha: parsearFechaLocal(fecha) } : {}),
         },
         });
@@ -37,10 +39,9 @@ gastosRouter.get('/', async (req, res) => {
         console.error(error);
         res.status(500).json({ error: 'Error al crear el gasto' });
     }
-    });
+});
 
-    // Crear una compra grande con items
-    gastosRouter.post('/compra-grande', async (req, res) => {
+gastosRouter.post('/compra-grande', async (req: RequestConUsuario, res) => {
     try {
         const { descripcion, categoria, fecha, lugar, items } = req.body;
 
@@ -60,6 +61,7 @@ gastosRouter.get('/', async (req, res) => {
             categoria,
             lugar,
             monto: montoTotal,
+            usuarioId: req.usuarioId as number,
             ...(fecha ? { fecha: parsearFechaLocal(fecha) } : {}),
             items: {
             create: items.map((item: { producto: string; cantidad: number; precioUnitario: number }) => ({
@@ -77,16 +79,23 @@ gastosRouter.get('/', async (req, res) => {
         console.error(error);
         res.status(500).json({ error: 'Error al crear la compra grande' });
     }
-    });
+});
 
-    // Editar un gasto (simple o compra grande, según si vienen items)
-    gastosRouter.put('/:id', async (req, res) => {
+gastosRouter.put('/:id', async (req: RequestConUsuario, res) => {
     try {
         const { id } = req.params;
         const { descripcion, monto, categoria, fecha, lugar, items } = req.body;
         const fechaData = fecha ? { fecha: parsearFechaLocal(fecha) } : {};
 
-        if (Array.isArray(items)) {
+    // Verificamos que el gasto sea del usuario logueado antes de tocarlo
+        const existente = await prisma.gasto.findFirst({
+        where: { id: Number(id), usuarioId: req.usuarioId },
+        });
+        if (!existente) {
+        return res.status(404).json({ error: 'Gasto no encontrado' });
+        }
+
+    if (Array.isArray(items)) {
         if (items.length === 0) {
             return res.status(400).json({ error: 'Debe incluir al menos un item' });
         }
@@ -132,10 +141,17 @@ gastosRouter.get('/', async (req, res) => {
     }
 });
 
-// Eliminar un gasto
-gastosRouter.delete('/:id', async (req, res) => {
+gastosRouter.delete('/:id', async (req: RequestConUsuario, res) => {
     try {
         const { id } = req.params;
+
+        const existente = await prisma.gasto.findFirst({
+        where: { id: Number(id), usuarioId: req.usuarioId },
+        });
+        if (!existente) {
+        return res.status(404).json({ error: 'Gasto no encontrado' });
+        }
+
         await prisma.gasto.delete({ where: { id: Number(id) } });
         res.status(204).send();
     } catch (error) {

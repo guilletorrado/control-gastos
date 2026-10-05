@@ -1,12 +1,15 @@
 import { Router } from 'express';
 import { prisma } from '../prisma';
 import { construirRangoMes } from '../utils/fechas';
+import { verificarToken, RequestConUsuario } from '../middleware/auth';
 
 export const resumenRouter = Router();
 
-resumenRouter.get('/', async (req, res) => {
+resumenRouter.use(verificarToken);
+
+resumenRouter.get('/', async (req: RequestConUsuario, res) => {
     try {
-        const where = construirRangoMes(req.query.mes);
+        const where = { usuarioId: req.usuarioId, ...construirRangoMes(req.query.mes) };
 
         const totalGastosResult = await prisma.gasto.aggregate({
         where,

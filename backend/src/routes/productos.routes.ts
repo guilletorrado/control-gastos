@@ -1,9 +1,12 @@
 import { Router } from 'express';
 import { prisma } from '../prisma';
+import { verificarToken, RequestConUsuario } from '../middleware/auth';
 
 export const productosRouter = Router();
 
-productosRouter.get('/historial', async (req, res) => {
+productosRouter.use(verificarToken);
+
+productosRouter.get('/historial', async (req: RequestConUsuario, res) => {
     try {
         const { nombre } = req.query;
 
@@ -12,19 +15,22 @@ productosRouter.get('/historial', async (req, res) => {
         }
 
         const items = await prisma.itemGasto.findMany({
-        where: { producto: { contains: nombre.trim(), mode: 'insensitive' } },
+        where: {
+            producto: { contains: nombre.trim(), mode: 'insensitive' },
+            gasto: { usuarioId: req.usuarioId },
+        },
         include: { gasto: { select: { fecha: true, lugar: true } } },
         orderBy: { gasto: { fecha: 'desc' } },
-        });
+    });
 
-        res.json(
+    res.json(
         items.map((i) => ({
-            id: i.id,
-            producto: i.producto,
-            cantidad: i.cantidad,
-            precioUnitario: i.precioUnitario,
-            fecha: i.gasto.fecha,
-            lugar: i.gasto.lugar,
+        id: i.id,
+        producto: i.producto,
+        cantidad: i.cantidad,
+        precioUnitario: i.precioUnitario,
+        fecha: i.gasto.fecha,
+        lugar: i.gasto.lugar,
         }))
         );
     } catch (error) {
