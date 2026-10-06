@@ -1,4 +1,5 @@
-const API_URL = 'http://localhost:3000';
+import { API_URL } from '../constants';
+
 const CLAVE_TOKEN = 'controlgastos_token';
 const CLAVE_EMAIL = 'controlgastos_email';
 
