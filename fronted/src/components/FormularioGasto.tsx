@@ -24,6 +24,7 @@ interface Props {
     onGuardarSimple: (datos: DatosGastoSimple) => void;
     onGuardarCompraGrande: (datos: DatosCompraGrande) => void;
     onCancelar: () => void;
+    onCambioCompraGrande?: (activo: boolean) => void;
 }
 
 export default function FormularioGasto({
@@ -31,7 +32,8 @@ export default function FormularioGasto({
     onGuardarSimple,
     onGuardarCompraGrande,
     onCancelar,
-    }: Props) {
+    onCambioCompraGrande,
+}: Props) {
     const [descripcion, setDescripcion] = useState('');
     const [monto, setMonto] = useState('');
     const [categoria, setCategoria] = useState(CATEGORIAS[0].valor);
@@ -45,37 +47,43 @@ export default function FormularioGasto({
     const [precioTemp, setPrecioTemp] = useState('');
     const [editandoItemIndex, setEditandoItemIndex] = useState<number | null>(null);
 
+  // Avisa a App.tsx cada vez que cambia el modo "compra grande"
+    useEffect(() => {
+        onCambioCompraGrande?.(esCompraGrande);
+        return () => onCambioCompraGrande?.(false);
+    }, [esCompraGrande, onCambioCompraGrande]);
+
   // Cuando cambia el gasto a editar, precargamos el formulario
     useEffect(() => {
-        if (!gastoEditando) return;
+    if (!gastoEditando) return;
 
-        /* eslint-disable react-hooks/set-state-in-effect */
-        setDescripcion(gastoEditando.descripcion);
-        setMonto(String(gastoEditando.monto));
-        setCategoria(gastoEditando.categoria);
-        setFecha(gastoEditando.fecha.split('T')[0]);
-        setProductoTemp('');
-        setCantidadTemp('');
-        setPrecioTemp('');
-        setEditandoItemIndex(null);
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setDescripcion(gastoEditando.descripcion);
+    setMonto(String(gastoEditando.monto));
+    setCategoria(gastoEditando.categoria);
+    setFecha(gastoEditando.fecha.split('T')[0]);
+    setProductoTemp('');
+    setCantidadTemp('');
+    setPrecioTemp('');
+    setEditandoItemIndex(null);
 
-        if (gastoEditando.items && gastoEditando.items.length > 0) {
-            setEsCompraGrande(true);
-            setLugar(gastoEditando.lugar ?? '');
-            setItems(
+    if (gastoEditando.items && gastoEditando.items.length > 0) {
+        setEsCompraGrande(true);
+        setLugar(gastoEditando.lugar ?? '');
+        setItems(
             gastoEditando.items.map((i) => ({
-                producto: i.producto,
-                cantidad: i.cantidad,
-                precioUnitario: i.precioUnitario,
+            producto: i.producto,
+            cantidad: i.cantidad,
+            precioUnitario: i.precioUnitario,
             }))
-            );
+        );
         } else {
-            setEsCompraGrande(false);
-            setLugar('');
-            setItems([]);
+        setEsCompraGrande(false);
+        setLugar('');
+        setItems([]);
         }
         /* eslint-enable react-hooks/set-state-in-effect */
-        }, [gastoEditando]);
+    }, [gastoEditando]);
 
     const limpiarFormulario = () => {
         setDescripcion('');
@@ -167,165 +175,167 @@ export default function FormularioGasto({
     };
 
     return (
-    <form onSubmit={handleSubmit} className="formulario">
+        <form onSubmit={handleSubmit} className="formulario">
         <label className="formulario__check">
-        <input
+            <input
             type="checkbox"
             checked={esCompraGrande}
             onChange={(e) => setEsCompraGrande(e.target.checked)}
             disabled={gastoEditando !== null}
-        />
-        Es una compra grande
+            />
+            Es una compra grande
         </label>
 
         {esCompraGrande ? (
-        <>
+            <>
             <input
-            className="formulario__campo"
-            placeholder="Descripción (opcional)"
-            value={descripcion}
-            onChange={(e) => setDescripcion(e.target.value)}
+                className="formulario__campo"
+                placeholder="Descripción (opcional)"
+                value={descripcion}
+                onChange={(e) => setDescripcion(e.target.value)}
             />
             <input
-            className="formulario__campo"
-            placeholder="Lugar (ej: Coto, Almacén del barrio)"
-            value={lugar}
-            onChange={(e) => setLugar(e.target.value)}
-            required
+                className="formulario__campo"
+                placeholder="Lugar (ej: Coto, Almacén del barrio)"
+                value={lugar}
+                onChange={(e) => setLugar(e.target.value)}
+                required
             />
             <select
-            className="formulario__campo"
-            value={categoria}
-            onChange={(e) => setCategoria(e.target.value)}
-            required
+                className="formulario__campo"
+                value={categoria}
+                onChange={(e) => setCategoria(e.target.value)}
+                required
             >
-            {CATEGORIAS.map((c) => (
+                {CATEGORIAS.map((c) => (
                 <option key={c.valor} value={c.valor}>
-                {c.icono} {c.valor}
+                    {c.icono} {c.valor}
                 </option>
-            ))}
+                ))}
             </select>
             <input
-            className="formulario__campo"
-            type="date"
-            value={fecha}
-            onChange={(e) => setFecha(e.target.value)}
-            required
+                className="formulario__campo"
+                type="date"
+                value={fecha}
+                onChange={(e) => setFecha(e.target.value)}
+                required
             />
 
             <div className="items-builder">
-            <p className="items-builder__titulo">
+                <p className="items-builder__titulo">
                 {editandoItemIndex !== null ? 'editando producto' : 'Agregar productos'}
-            </p>
-            <div className="items-builder__campos">
+                </p>
+                <div className="items-builder__campos">
                 <input
-                className="formulario__campo"
-                placeholder="Producto"
-                value={productoTemp}
-                onChange={(e) => setProductoTemp(e.target.value)}
+                    className="formulario__campo"
+                    placeholder="Producto"
+                    value={productoTemp}
+                    onChange={(e) => setProductoTemp(e.target.value)}
                 />
                 <input
-                className="formulario__campo"
-                placeholder="Cant."
-                type="number"
-                value={cantidadTemp}
-                onChange={(e) => setCantidadTemp(e.target.value)}
+                    className="formulario__campo"
+                    placeholder="Cantidad"
+                    type="number"
+                    value={cantidadTemp}
+                    onChange={(e) => setCantidadTemp(e.target.value)}
                 />
                 <input
-                className="formulario__campo"
-                placeholder="Precio u."
-                type="number"
-                value={precioTemp}
-                onChange={(e) => setPrecioTemp(e.target.value)}
+                    className="formulario__campo"
+                    placeholder="Precio unitario"
+                    type="number"
+                    value={precioTemp}
+                    onChange={(e) => setPrecioTemp(e.target.value)}
                 />
-            </div>
-            <div className="formulario__acciones">
+                </div>
+                <div className="formulario__acciones">
                 <button type="button" className="boton" onClick={agregarItem}>
-                {editandoItemIndex !== null ? 'Guardar producto' : '+ Agregar producto'}
+                    {editandoItemIndex !== null ? 'Guardar producto' : '+ Agregar producto'}
                 </button>
                 {editandoItemIndex !== null && (
-                <button type="button" className="boton--texto" onClick={cancelarEdicionItem}>
+                    <button type="button" className="boton--texto" onClick={cancelarEdicionItem}>
                     Cancelar
-                </button>
+                    </button>
                 )}
-            </div>
+                </div>
 
-            {items.length > 0 && (
+                {items.length > 0 && (
                 <ul className="items-lista">
-                {items.map((item, i) => (
+                    {items.map((item, i) => (
                     <li
-                    key={i}
-                    className={`items-lista__item ${editandoItemIndex === i ? 'editando' : ''}`}
+                        key={i}
+                        className={`items-lista__item ${editandoItemIndex === i ? 'editando' : ''}`}
                     >
-                    <span>
-                    {item.producto} — {item.cantidad} x ${formatearMonto(item.precioUnitario)}
-                    </span>
-                    <span className="items-lista__monto">
-                    ${formatearMonto(item.cantidad * item.precioUnitario)}{' '}
+                        <span>
+                        {item.producto} — {item.cantidad} x ${formatearMonto(item.precioUnitario)}
+                        </span>
+                        <span className="items-lista__monto">
+                        ${formatearMonto(item.cantidad * item.precioUnitario)}{' '}
                         <button type="button" className="boton--texto" onClick={() => editarItem(i)}>
-                        editar
+                            editar
                         </button>{' '}
                         <button type="button" className="boton--texto" onClick={() => quitarItem(i)}>
-                        quitar
+                            quitar
                         </button>
-                    </span>
+                        </span>
                     </li>
-                ))}
+                    ))}
                 </ul>
-            )}
+                )}
 
-            {items.length > 0 && <p className="items-builder__total">Total: ${formatearMonto(totalItems)}</p>}
+                {items.length > 0 && (
+                <p className="items-builder__total">Total: ${formatearMonto(totalItems)}</p>
+                )}
             </div>
-        </>
+            </>
         ) : (
-        <>
+            <>
             <input
-            className="formulario__campo"
-            placeholder="Descripción"
-            value={descripcion}
-            onChange={(e) => setDescripcion(e.target.value)}
-            required
+                className="formulario__campo"
+                placeholder="Descripción"
+                value={descripcion}
+                onChange={(e) => setDescripcion(e.target.value)}
+                required
             />
             <input
-            className="formulario__campo"
-            placeholder="Monto"
-            type="number"
-            value={monto}
-            onChange={(e) => setMonto(e.target.value)}
-            required
+                className="formulario__campo"
+                placeholder="Monto"
+                type="number"
+                value={monto}
+                onChange={(e) => setMonto(e.target.value)}
+                required
             />
             <select
-            className="formulario__campo"
-            value={categoria}
-            onChange={(e) => setCategoria(e.target.value)}
-            required
+                className="formulario__campo"
+                value={categoria}
+                onChange={(e) => setCategoria(e.target.value)}
+                required
             >
-            {CATEGORIAS.map((c) => (
+                {CATEGORIAS.map((c) => (
                 <option key={c.valor} value={c.valor}>
-                {c.icono} {c.valor}
+                    {c.icono} {c.valor}
                 </option>
-            ))}
+                ))}
             </select>
             <input
-            className="formulario__campo"
-            type="date"
-            value={fecha}
-            onChange={(e) => setFecha(e.target.value)}
-            required
+                className="formulario__campo"
+                type="date"
+                value={fecha}
+                onChange={(e) => setFecha(e.target.value)}
+                required
             />
-        </>
+            </>
         )}
 
         <div className="formulario__acciones">
-        <button type="submit" className="boton">
+            <button type="submit" className="boton">
             {gastoEditando !== null ? 'Guardar cambios' : 'Agregar'}
-        </button>
-        {gastoEditando !== null && (
-            <button type="button" className="boton boton--secundario" onClick={handleCancelar}>
-            Cancelar
             </button>
-        )}
+            {gastoEditando !== null && (
+            <button type="button" className="boton boton--secundario" onClick={handleCancelar}>
+                Cancelar
+            </button>
+            )}
         </div>
-    </form>
+        </form>
     );
 }

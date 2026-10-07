@@ -62,6 +62,7 @@ function App() {
   const [resumen, setResumen] = useState<Resumen | null>(null);
   const [mesSeleccionado, setMesSeleccionado] = useState(mesActual);
   const [tipoMovimiento, setTipoMovimiento] = useState<'egreso' | 'ingreso'>('egreso');
+  const [compraGrandeActiva, setCompraGrandeActiva] = useState(false);
 
   const [gastoEditando, setGastoEditando] = useState<Gasto | null>(null);
   const [ingresoEditando, setIngresoEditando] = useState<Ingreso | null>(null);
@@ -176,7 +177,7 @@ function App() {
         </div>
       </div>
 
-      <div className="app__grid">
+      <div className={`app__grid ${compraGrandeActiva ? 'app__grid--expandido' : ''}`}>
         <div className="app__col-form">
           <div className="panel">
             <SelectorTipoMovimiento tipo={tipoMovimiento} onCambiar={setTipoMovimiento} />
@@ -187,6 +188,7 @@ function App() {
                 onGuardarSimple={handleCrearGasto}
                 onGuardarCompraGrande={handleCrearCompraGrande}
                 onCancelar={() => {}}
+                onCambioCompraGrande={setCompraGrandeActiva}
               />
             ) : (
               <FormularioIngreso
@@ -205,16 +207,18 @@ function App() {
         </div>
       </div>
 
-      <div className="panel">
-        <ListaGastos
-          gastos={gastos}
-          ingresos={ingresos}
-          onEditarGasto={handleEditarGasto}
-          onEliminarGasto={pedirConfirmacionGasto}
-          onEditarIngreso={handleEditarIngreso}
-          onEliminarIngreso={pedirConfirmacionIngreso}
-        />
-      </div>
+      {(gastos.length > 0 || ingresos.length > 0) && (
+        <div className="panel">
+          <ListaGastos
+            gastos={gastos}
+            ingresos={ingresos}
+            onEditarGasto={handleEditarGasto}
+            onEliminarGasto={pedirConfirmacionGasto}
+            onEditarIngreso={handleEditarIngreso}
+            onEliminarIngreso={pedirConfirmacionIngreso}
+          />
+        </div>
+      )}
 
       <div className="panel">
         <ComparadorPrecios />

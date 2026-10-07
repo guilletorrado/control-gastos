@@ -1,11 +1,30 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import rateLimit from 'express-rate-limit';
 import { prisma } from '../prisma';
 
 export const authRouter = Router();
 
-authRouter.post('/registro', async (req, res) => {
+// Máximo 5 cuentas nuevas por hora desde la misma IP
+const registroLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hora
+    max: 5,
+    message: { error: 'Demasiados intentos de registro. Probá de nuevo más tarde.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Máximo 10 intentos de login cada 15 minutos desde la misma IP
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutos
+    max: 10,
+    message: { error: 'Demasiados intentos de inicio de sesión. Probá de nuevo en unos minutos.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+authRouter.post('/registro', registroLimiter, async (req, res) => {
     try {
         const { email, password } = req.body;
 
@@ -34,7 +53,7 @@ authRouter.post('/registro', async (req, res) => {
     }
 });
 
-authRouter.post('/login', async (req, res) => {
+authRouter.post('/login', loginLimiter, async (req, res) => {
     try {
         const { email, password } = req.body;
 
