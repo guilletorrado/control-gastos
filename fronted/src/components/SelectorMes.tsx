@@ -28,7 +28,7 @@ export default function SelectorMes({ mes, onCambiarMes }: Props) {
 
         <DatePicker
             selected={mesAFecha(mes)}
-            onChange={(fecha) => fecha && onCambiarMes(fechaAMes(fecha))}
+            onChange={(fecha : Date | null) => fecha && onCambiarMes(fechaAMes(fecha))}
             dateFormat="MMMM yyyy"
             showMonthYearPicker
             maxDate={mesAFecha(mesActual)}
